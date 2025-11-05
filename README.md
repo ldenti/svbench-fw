@@ -51,4 +51,4 @@ Benchmarkers:
   * no analysis on minda results
 
 ### Experiments
-To replicate the experiments presented in the manuscript, follow the [instructions](https://github.com/ldenti/svbench/blob/main/scripts/README.md) in the `scripts` folder.
+To replicate the experiments presented in the manuscript, follow the [instructions](https://github.com/ldenti/svbench/blob/main/plots/README.md) in the `plots` folder.
