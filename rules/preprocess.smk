@@ -43,7 +43,7 @@ rule deepvariant:
     shell:
         """
         singularity run --bind /:/wd docker://google/deepvariant:1.8.0 /opt/deepvariant/bin/run_deepvariant --model_type PACBIO --ref /wd/{input.fa} --reads /wd/{input.bam} --output_vcf /wd/{output.vcf} --num_shards {threads} --sample_name {SAMPLE_NAME}
-        tabix -p vcf {output.vcf}
+        # tabix -p vcf {output.vcf}
         """
 
 

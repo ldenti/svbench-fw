@@ -8,8 +8,9 @@ rule truvari:
         d=directory(pjoin(WD, "truvari-{truth}-{option}", "{caller}")),
         dd=directory(pjoin(WD, "truvari-{truth}-{option}", "{caller}", "phab_bench")),
     params:
-        opt=lambda wildcards, input: truvari_options[wildcards.option] + (" " + input.bed if wildcards.option == "wbed" else ""),
-        aligner="mafft" # lambda wildcards: "mafft" if wildcards.option == "def" else "poa",
+        opt=lambda wildcards, input: truvari_options[wildcards.option]
+        + (" " + input.bed if wildcards.option == "wbed" else ""),
+        aligner="mafft",  # lambda wildcards: "mafft" if wildcards.option == "def" else "poa",
     threads: workflow.cores / 2
     conda:
         "../envs/truvari.yml"
@@ -18,7 +19,9 @@ rule truvari:
         rm -rf {output.d}
         truvari bench {params.opt} --reference {input.fa} --base {input.truth} --comp {input.vcf} --output {output.d}
         truvari refine --reference {input.fa} --regions {output.d}/candidate.refine.bed --coords R --use-original-vcfs --threads {threads} --align {params.aligner} {output.d}
-        truvari ga4gh --input {output.d} --output {output.d}/ga4gh_with_refine # --with-refine
+        # we need this if since this will fail if there are not regions to refine (like in the example data)
+        # wasn't an issue with real data
+        if [ -d {output.dd} ] ; then truvari ga4gh --input {output.d} --output {output.d}/ga4gh_with_refine ; else mkdir {output.dd} ; touch {output.dd}/NOREGIONSTOREFINE ; fi # with-refine
         """
 
 

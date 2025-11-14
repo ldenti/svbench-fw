@@ -6,10 +6,10 @@ The goal of this repository is to simplify SV calling performance evaluation whi
 
 This framework is provided as a Snakemake pipeline. Additional python scripts can be used to summarize and plot the results.
 
-### Prerequisites
+### Prerequisites and usage
 * conda/mamba
 * snakemake
-* seaborn (if you want plots)
+* seaborn (for optional plots)
 
 ``` sh
 mamba create -c bioconda -c conda-forge -n svbench snakemake-minimal seaborn
@@ -18,8 +18,31 @@ conda activate svbench
 snakemake -c 16 --use-conda --configfile config/config.yml -p [-n]
 
 WD=$(grep "wd:" ./config/config.yml | cut -f2 -d" ")
-ls $WD/*.csv $WD/*.png
+ls $WD/*.csv
 ```
+
+### Example
+To test `svbench-fw`, we provide example data (zenodo) and the following instructions:
+```
+git clone https://github.com/ldenti/svbench-fw.git
+cd svbench-fw
+
+# mamba create -c bioconda -c conda-forge -n svbench snakemake-minimal
+conda activate svbench
+
+mkdir svbench-example
+cd svbench-example
+wget https://zenodo.org/records/17608271/files/svbench-fw.exampledata.tar.gz
+tar xvfz svbench-fw.exampledata.tar.gz
+bash write_config.sh > config.yml
+cd ..
+snakemake -c 4 --use-conda --configfile ./svbench-example/config.yml -p [-n]
+ls ./svbench-example/SMK_OUT/*.csv
+```
+
+*Note 1:* this should take ~half an hour (using 4 threads)
+
+*Note 2:* recall of all tools will be low since reads cover a small region of the chromosome whereas truthsets and contigs cover the entire chromosome.
 
 ### Supported tools
 Read alignment:
