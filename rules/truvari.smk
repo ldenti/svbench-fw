@@ -1,53 +1,141 @@
-rule truvari:
+# DIPBED = pjoin(WD, "{ref}", "asmcallsets-{a}", "dipcall.bed"),
+# HAPBED = pjoin(WD, "{ref}", "asmcallsets-{a}", "hapdiff", "confident_regions.bed"),
+
+# options: --passonly --pick ac --dup-to-ins
+
+
+rule truvari_full:
     input:
-        fa=REF,
-        vcf=pjoin(WD, "callsets", "{caller}.vcf.gz"),
-        truth=pjoin(WD, "truths", "{truth}.vcf.gz"),
-        bed=lambda wildcards: HAPBED if wildcards.truth == "hapdiff" else DIPBED,
+        fa=pjoin(WD, "input", "refs", "{ref}.fa"),
+        vcf=pjoin(WD, "{ref}", "callsets", "{caller}.vcf.gz"),
+        asmcaller=pjoin(WD, "{ref}", "asmcallsets-{a}", "{asmcaller}.vcf.gz"),
     output:
-        d=directory(pjoin(WD, "truvari-{truth}-{option}", "{caller}")),
-        dd=directory(pjoin(WD, "truvari-{truth}-{option}", "{caller}", "phab_bench")),
-    params:
-        opt=lambda wildcards, input: truvari_options[wildcards.option]
-        + (" " + input.bed if wildcards.option == "wbed" else ""),
-        aligner="mafft",  # lambda wildcards: "mafft" if wildcards.option == "def" else "poa",
-    threads: workflow.cores / 2
+        d=directory(
+            pjoin(WD, "{ref}", "truvari", "full", "{a}", "{asmcaller}", "{caller}")
+        ),
+        dd=directory(
+            pjoin(
+                WD,
+                "{ref}",
+                "truvari",
+                "full",
+                "{a}",
+                "{asmcaller}",
+                "{caller}",
+                "phab_bench",
+            )
+        ),
+    threads: workflow.cores / 4
     conda:
         "../envs/truvari.yml"
     shell:
         """
+        set +e
         rm -rf {output.d}
-        truvari bench {params.opt} --reference {input.fa} --base {input.truth} --comp {input.vcf} --output {output.d}
-        truvari refine --reference {input.fa} --regions {output.d}/candidate.refine.bed --coords R --use-original-vcfs --threads {threads} --align {params.aligner} {output.d}
+        truvari bench --passonly --pick ac --dup-to-ins --reference {input.fa} --base {input.asmcaller} --comp {input.vcf} --output {output.d}
+        truvari refine --reference {input.fa} --regions {output.d}/candidate.refine.bed --coords R --use-original-vcfs --threads {threads} --align mafft {output.d}
+        exitcode=$?
         # we need this if since this will fail if there are not regions to refine (like in the example data)
         # wasn't an issue with real data
-        if [ -d {output.dd} ] ; then truvari ga4gh --input {output.d} --output {output.d}/ga4gh_with_refine ; else mkdir {output.dd} ; touch {output.dd}/NOREGIONSTOREFINE ; fi # with-refine
+        if [ -d {output.dd} ]
+        then
+            truvari ga4gh --input {output.d} --output {output.d}/ga4gh_with_refine
+        else
+            mkdir -p {output.dd}
+            touch {output.d}/NOREGIONSTOREFINE
+            cp {output.d}/summary.json {output.d}/ga4gh_with_refine.summary.json
+        fi
         """
 
 
-rule format_truvari:
+rule truvari_confident:
     input:
-        expand(pjoin(WD, "truvari-{{truth}}-{{option}}", "{caller}"), caller=CALLERS),
+        fa=pjoin(WD, "input", "refs", "{ref}.fa"),
+        vcf=pjoin(WD, "{ref}", "callsets", "{caller}.vcf.gz"),
+        asmcaller=pjoin(WD, "{ref}", "asmcallsets-{a}", "{asmcaller}.vcf.gz"),
+        bed=lambda wildcards: (
+            pjoin(WD, "{ref}", "asmcallsets-{a}", "hapdiff", "confident_regions.bed")
+            if wildcards.asmcaller == "hapdiff"
+            else pjoin(WD, "{ref}", "asmcallsets-{a}", "dipcall.bed")
+        ),
     output:
-        csv=pjoin(WD, "{truth}.truvari-{option}.csv"),
-        refcsv=pjoin(WD, "{truth}.truvari-{option}.refine.csv"),
-    params:
-        bd=pjoin(WD, "truvari-{truth}-{option}"),
-    shell:
-        """
-        python3 ./scripts/format_truvari.py {params.bd} > {output.csv}
-        python3 ./scripts/format_truvari.py --refine {params.bd} > {output.refcsv}
-        """
-
-
-rule plot_truvari:
-    input:
-        pjoin(WD, "{truth}.truvari-{option}.csv"),
-    output:
-        pjoin(WD, "{truth}.truvari-{option}.csv.png"),
+        d=directory(
+            pjoin(WD, "{ref}", "truvari", "conf", "{a}", "{asmcaller}", "{caller}")
+        ),
+        dd=directory(
+            pjoin(
+                WD,
+                "{ref}",
+                "truvari",
+                "conf",
+                "{a}",
+                "{asmcaller}",
+                "{caller}",
+                "phab_bench",
+            )
+        ),
+    threads: workflow.cores / 4
     conda:
-        "../envs/seaborn.yml"
+        "../envs/truvari.yml"
     shell:
         """
-        python3 ./scripts/plot_truvari.py single {input}
+        set +e
+        rm -rf {output.d}
+        truvari bench --passonly --pick ac --dup-to-ins --includebed {input.bed} --reference {input.fa} --base {input.asmcaller} --comp {input.vcf} --output {output.d}
+        truvari refine --reference {input.fa} --regions {output.d}/candidate.refine.bed --coords R --use-original-vcfs --threads {threads} --align mafft {output.d}
+        exitcode=$?
+        # we need this if since this will fail if there are not regions to refine (like in the example data)
+        # wasn't an issue with real data
+        if [ -d {output.dd} ]
+        then
+            truvari ga4gh --input {output.d} --output {output.d}/ga4gh_with_refine
+        else
+            mkdir -p {output.dd}
+            touch {output.d}/NOREGIONSTOREFINE
+            cp {output.d}/summary.json {output.d}/ga4gh_with_refine.summary.json
+        fi
+        """
+
+
+rule truvari_strat:
+    input:
+        fa=pjoin(WD, "input", "refs", "{ref}.fa"),
+        vcf=pjoin(WD, "{ref}", "callsets", "{caller}.vcf.gz"),
+        asmcaller=pjoin(WD, "{ref}", "asmcallsets-{a}", "{asmcaller}.vcf.gz"),
+        bed=pjoin(WD, "input", "strats", "{strat}", "{ref}.bed"),
+    output:
+        d=directory(
+            pjoin(WD, "{ref}", "truvari", "{strat}", "{a}", "{asmcaller}", "{caller}")
+        ),
+        dd=directory(
+            pjoin(
+                WD,
+                "{ref}",
+                "truvari",
+                "{strat}",
+                "{a}",
+                "{asmcaller}",
+                "{caller}",
+                "phab_bench",
+            )
+        ),
+    threads: workflow.cores / 4
+    conda:
+        "../envs/truvari.yml"
+    shell:
+        """
+        set +e
+        rm -rf {output.d}
+        truvari bench --passonly --pick ac --dup-to-ins --includebed {input.bed} --reference {input.fa} --base {input.asmcaller} --comp {input.vcf} --output {output.d}
+        truvari refine --reference {input.fa} --regions {output.d}/candidate.refine.bed --coords R --use-original-vcfs --threads {threads} --align mafft {output.d}
+        # we need this if since this will fail if there are not regions to refine (like in the example data)
+        # wasn't an issue with real data
+        if [ -d {output.dd} ]
+        then
+            truvari ga4gh --input {output.d} --output {output.d}/ga4gh_with_refine
+        else
+            mkdir -p {output.dd}
+            touch {output.d}/NOREGIONSTOREFINE
+            cp {output.d}/summary.json {output.d}/ga4gh_with_refine.summary.json
+        fi
         """

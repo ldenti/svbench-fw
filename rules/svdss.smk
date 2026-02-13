@@ -1,77 +1,80 @@
 rule svdss_smooth:
     input:
-        fa=REF,
-        bam=BAM,
+        fa=pjoin(WD, "input", "refs", "{ref}.fa"),
+        bam=pjoin(WD, "{ref}", "alignments-ht.bam"),
     output:
-        bam=pjoin(WD, "SVDSS", "smoothed.selective.bam"),
+        bam=pjoin(WD, "{ref}", "SVDSS", "smoothed.selective.bam"),
     params:
-        wd=pjoin(WD, "SVDSS"),
+        wd=pjoin(WD, "{ref}", "SVDSS"),
     threads: workflow.cores
     log:
-        pjoin(WD, "times", "svdss-smooth.time"),
+        time=pjoin(WD, "times", "{ref}", "svdss-smooth.time"),
     conda:
         "../envs/svdss.yml"
     shell:
         """
-        SVDSS smooth --reference {input.fa} --bam {input.bam} --workdir {params.wd} --threads {threads}
+        /usr/bin/time -vo {log.time} SVDSS smooth --reference {input.fa} --bam {input.bam} --workdir {params.wd} --threads {threads}
         samtools index {output.bam}
         """
 
 
 rule svdss_search:
     input:
-        fmd=REF + ".fmd",
-        bam=pjoin(WD, "SVDSS", "smoothed.selective.bam"),
+        fmd=pjoin(WD, "input", "refs", "{ref}.fa.fmd"),
+        bam=rules.svdss_smooth.output.bam,
     output:
-        sfs=pjoin(WD, "SVDSS", "solution_batch_0.assembled.sfs"),
+        sfs=pjoin(WD, "{ref}", "SVDSS", "solution_batch_0.assembled.sfs"),
     params:
-        wd=pjoin(WD, "SVDSS"),
+        wd=pjoin(WD, "{ref}", "SVDSS"),
     threads: workflow.cores
     log:
-        pjoin(WD, "times", "svdss-search.time"),
+        time=pjoin(WD, "times", "{ref}", "svdss-search.time"),
     conda:
         "../envs/svdss.yml"
     shell:
         """
-        SVDSS search --index {input.fmd} --bam {input.bam} --threads {threads} --workdir {params.wd} --assemble
+        /usr/bin/time -vo {log.time} SVDSS search --index {input.fmd} --bam {input.bam} --threads {threads} --workdir {params.wd} --assemble
         """
 
 
 rule svdss_call:
     input:
-        fa=REF,
-        bam=pjoin(WD, "SVDSS", "smoothed.selective.bam"),
-        sfs=pjoin(WD, "SVDSS", "solution_batch_0.assembled.sfs"),
+        fa=pjoin(WD, "input", "refs", "{ref}.fa"),
+        bam=rules.svdss_smooth.output.bam,
+        sfs=rules.svdss_search.output.sfs,
     output:
-        vcf=pjoin(WD, "SVDSS", "w{w}", "svs_poa.vcf"),
+        vcf=pjoin(WD, "{ref}", "SVDSS", "s{s}", "svs_poa.vcf"),
     params:
-        wd=pjoin(WD, "SVDSS"),
+        wd=pjoin(WD, "{ref}", "SVDSS"),
     threads: workflow.cores
     log:
-        pjoin(WD, "times", "svdss-call-w{w}.time"),
+        time=pjoin(WD, "times", "{ref}", "svdss-call-s{s}-q0.time"),
     conda:
         "../envs/svdss.yml"
     shell:
         """
         n=$(ls {params.wd}/solution_batch_*.assembled.sfs | wc -l)
-        SVDSS call --reference {input.fa} --bam {input.bam} --threads {threads} --workdir {params.wd} --batches ${{n}} --min-cluster-weight {wildcards.w}
+        /usr/bin/time -vo {log.time} SVDSS call --reference {input.fa} --bam {input.bam} --threads {threads} --workdir {params.wd} --batches ${{n}} --min-cluster-weight {wildcards.s}
         cp {params.wd}/svs_poa.vcf {output.vcf}
         """
 
+
 rule svdss_post:
     input:
-        fa=REF,
-        bam=BAM_HT,
-        vcf=pjoin(WD, "SVDSS", "w{w}", "svs_poa.vcf"),
+        fa=pjoin(WD, "input", "refs", "{ref}.fa"),
+        bam=rules.svdss_smooth.output.bam,
+        vcf=rules.svdss_call.output.vcf,
     output:
-        vcf=pjoin(WD, "callsets", "SVDSS-w{w}.vcf.gz"),
+        vcf=pjoin(WD, "{ref}", "callsets", "SVDSS-s{s}-q0.vcf.gz"),
+    threads: workflow.cores
+    log:
+        time=pjoin(WD, "times", "{ref}", "svdss-hiphase-s{s}-q0.time"),
     conda:
         "../envs/hiphase.yml"
-    threads: workflow.cores
     shell:
         """
         echo {SAMPLE_NAME} > {input.vcf}.sample.txt
         bcftools reheader --samples {input.vcf}.sample.txt {input.vcf} | python3 ./scripts/to_upper.py | bgzip -c > {input.vcf}.gz
         tabix -p vcf {input.vcf}.gz
-        hiphase --bam {input.bam} --reference {input.fa} --vcf {input.vcf}.gz --output-vcf {output.vcf} --threads {threads} > {output.vcf}
+        /usr/bin/time -vo {log.time} hiphase --bam {input.bam} --reference {input.fa} --vcf {input.vcf}.gz --output-vcf {output.vcf} --threads {threads} > {output.vcf}
         """

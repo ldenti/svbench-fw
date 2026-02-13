@@ -4,4 +4,4 @@ channels:
   - bioconda
 dependencies:
   - python=3.6
-  - cutesv=2.1.2
+  - cutesv=2.1.3

@@ -1,32 +1,100 @@
 # from snakemake.utils import min_version
 # min_version("6.4.1")
+import os
 from os.path import join as pjoin
 
 
 ##### config file #####
-# configfile: "config/config.yml"
+configfile: "config/config.yml"
+
+
+def lns(src, dst):
+    if os.path.exists(dst):
+        return
+    print(f"ln -s {src} {dst}")
+    os.symlink(src, dst)
+
+
+WD = config["wd"]
+
+os.makedirs(WD, exist_ok=True)
+os.makedirs(pjoin(WD, "input"), exist_ok=True)
+
+# REFs = config["ref"]
+references = []
+os.makedirs(pjoin(WD, "input", "refs"), exist_ok=True)
+for ref, fn in config["ref"].items():
+    references.append(ref)
+    # XXX: assuming not gzipped, but it should still work if no tool makes any assumption from extension
+    lns(fn, pjoin(WD, "input", "refs", f"{ref}.fa"))
+
+# TRFs = config["trf"]
+os.makedirs(pjoin(WD, "input", "trfs"), exist_ok=True)
+for ref, fn in config["trf"].items():
+    lns(fn, pjoin(WD, "input", "trfs", f"{ref}.bed"))
+
+# STRATs = config["strat"]
+strats = []
+os.makedirs(pjoin(WD, "input", "strats"), exist_ok=True)
+for strat, fns in config["strat"].items():
+    strats.append(strat)
+    os.makedirs(pjoin(WD, "input", "strats", strat), exist_ok=True)
+    for ref, fn in fns.items():
+        lns(fn, pjoin(WD, "input", "strats", strat, f"{ref}.bed"))
+
+# GIAB11s = config["giab11"]
+for t, fns in config["giab11"].items():
+    os.makedirs(pjoin(WD, "input", "giab11"), exist_ok=True)
+    for ref, fn in fns.items():
+        if t == "bed":
+            lns(fn, pjoin(WD, "input", "giab11", f"{ref}.bed"))
+        else:
+            lns(fn, pjoin(WD, "input", "giab11", f"{ref}.vcf.gz"))
+            lns(fn + ".tbi", pjoin(WD, "input", "giab11", f"{ref}.vcf.gz.tbi"))
+
+# GIAB06s = config["giab06"]
+# for t, fns in config["giab06"].items():
+#     os.makedirs(pjoin(WD, "input", "giab06"), exist_ok=True)
+#     for ref, fn in fns.items():
+#         if t == "bed":
+#             lns(fn, pjoin(WD, "input", "giab06", f"{ref}.bed"))
+#         else:
+#             lns(fn, pjoin(WD, "input", "giab06", f"{ref}.vcf.gz"))
+#             lns(fn, pjoin(WD, "input", "giab06", f"{ref}.vcf.gz.tbi"))
 
 SAMPLE_NAME = config["name"]
-REF = config["fa"]
 FQ = config["fq"]
-HAP1 = config["hap-pat"]
-HAP2 = config["hap-mat"]
-WD = config["wd"]
-TRF = config["trf"]
 
-EASYBED = config["strat"]["easy"]
-HARDBED = config["strat"]["hard"]
+asms = []
+for n, fns in config["haps"].items():
+    asms.append(n)
+    os.makedirs(pjoin(WD, "input", f"asm-{n}"), exist_ok=True)
+    for i, fn in enumerate(fns, 1):
+        # XXX: assuming not gzipped, but it should still work if no tool makes any assumption from extension
+        lns(fn, pjoin(WD, "input", f"asm-{n}", f"hap{i}.fa"))
 
-GIAB11 = config["giab11"]["vcf"]
-GIAB11_BED = config["giab11"]["bed"]
-GIAB06 = config["giab06"]["vcf"]
-GIAB06_BED = config["giab06"]["bed"]
+ASMC = config["asm-callers"]
 
-TRUTHS = config["truths"]
-CALLERS = config["callers"]
+CALLERS = []
+for caller, opts in config["callers"].items():
+    for s in opts["s"]:
+        for q in opts["q"]:
+            CALLERS.append(f"{caller}-s{s}-q{q}")
+print(CALLERS)
+
+"""
+A note on callers: I tried to use output VCFs as they are. But sometimes,
+truvari was complaining about BND records, so I decided to remove them.
+"""
+
 
 wildcard_constraints:
-    asmcaller="|".join([f"({c})" for c in TRUTHS])
+    ref="|".join([f"({x})" for x in references]),
+    a="|".join([f"({x})" for x in asms]),
+    s=r"\d+",
+    q=r"\d+",
+    strat="|".join([f"({x})" for x in strats]),
+    asmcaller="|".join([f"({c})" for c in ASMC]),
 
 
 # callers from assembly
@@ -35,122 +103,118 @@ include: "rules/callers-asm-post.smk"
 # alignment and phasing
 include: "rules/preprocess.smk"
 # callers from BAM
-include: "rules/callers.smk"
-# callsets from severus paper
-include: "rules/callers-severus-hg19.smk"
-# SVDSS
-include: "rules/svdss2.smk"
+include: "rules/cutesv.smk"
+include: "rules/debreak.smk"
+include: "rules/sawfish.smk"
+include: "rules/severus.smk"
+include: "rules/sniffles.smk"
+include: "rules/svision-pro.smk"
 include: "rules/svdss2-ht.smk"
 include: "rules/svdss.smk"
-# giab
-include: "rules/giab.smk"
-
-
-# postprocessing
-truvari_options = {
-    "def": "--passonly --pick ac --dup-to-ins",
-    "wbed": "--passonly --pick ac --dup-to-ins --includebed ",
-    "easybed": "--passonly --pick ac --dup-to-ins --includebed " + EASYBED,
-    "hardbed": "--passonly --pick ac --dup-to-ins --includebed " + HARDBED,
-    # "sev": "--passonly --typeignore --dup-to-ins -p 0 -s 30 -S 0",
-}
-
+# truvari
 include: "rules/truvari.smk"
-# include: "rules/minda.smk"
+include: "rules/truvari-giab.smk"
 
 
 rule all:
     input:
+        # from preprocess.smk
+        expand(pjoin(WD, "{ref}", "alignments-ht.bam"), ref=references),
         # from callers-asm.smk
-        expand(pjoin(WD, "truths", "{truth}.vcf.gz"), truth=TRUTHS),
-        expand(pjoin(WD, "truths-confident", "{truth}.vcf.gz"), truth=TRUTHS),
-        # from callers-asm-post.smk
-        expand(pjoin(WD, "truths", "{truth}.haps-w500.paf"), truth=TRUTHS),
-        expand(pjoin(WD, "truths-confident", "{truth}.haps-w500.paf"), truth=TRUTHS),
-        # FIXME: nexts are hardcoded
         expand(
-            pjoin(WD, "truths", "comparison-{mode}", "svim-asm-against-dipcall"),
-            mode=["def", "wbed"],
+            pjoin(WD, "{ref}", "asmcallsets-{a}", "{asmc}.vcf.gz"),
+            ref=references,
+            a=asms,
+            asmc=ASMC,
         ),
         expand(
-            pjoin(WD, "truths", "comparison-{mode}", "hapdiff-against-dipcall"),
-            mode=["def", "wbed"],
+            pjoin(WD, "{ref}", "asmcallsets-{a}.confident", "{asmc}.vcf.gz"),
+            ref=references,
+            a=asms,
+            asmc=ASMC,
+        ),
+        # from various callers .smk
+        expand(
+            pjoin(WD, "{ref}", "callsets", "{caller}.vcf.gz"),
+            ref=references,
+            caller=CALLERS,
+        ),
+        #
+        pjoin(WD, "truvari.csv"),
+        pjoin(WD, "truvari-giab.csv"),
+        #
+        expand(
+            pjoin(
+                WD,
+                "{ref}",
+                "asmcallsets-{a}",
+                "comparison-{mode}",
+                "{truth2}-against-{truth1}",
+            ),
+            ref=references,
+            a=asms,
+            mode=["full", "conf"],
+            truth1=ASMC,
+            truth2=ASMC,
+        ),
+        #
+        expand(
+            pjoin(WD, "{ref}", "asmcallsets-{a}", "{asmc}.haps-w{w}.paf"),
+            ref=references,
+            a=asms,
+            asmc=ASMC,
+            w=[500],
         ),
         expand(
-            pjoin(WD, "truths", "comparison-{mode}", "hapdiff-against-svim-asm"),
-            mode=["def", "wbed"],
+            pjoin(WD, "{ref}", "asmcallsets-{a}.confident", "{asmc}.haps-w{w}.paf"),
+            ref=references,
+            a=asms,
+            asmc=ASMC,
+            w=[500],
         ),
+
+
+rule format_truvari:
+    input:
         # from truvari.smk
         expand(
-            pjoin(WD, "{truth}.truvari-{opt}.csv"),
-            truth=TRUTHS,
-            opt=["def", "wbed", "easybed", "hardbed"],
+            pjoin(WD, "{ref}", "truvari", "{x}", "{a}", "{asmc}", "{caller}"),
+            ref=references,
+            x=["full", "conf"] + strats,
+            a=asms,
+            asmc=ASMC,
+            caller=CALLERS,
         ),
-        # from giab.smk
-        pjoin(WD, "giab-v1.1-def.csv"),
-        pjoin(WD, "giab-v1.1-wbed.csv"),
-        pjoin(WD, "giab-v1.1-def.refine.csv"),
-        pjoin(WD, "giab-v1.1-wbed.refine.csv"),
-        pjoin(WD, "giab-v0.6-def.csv") if GIAB06 != "." else [],
-        pjoin(WD, "giab-v0.6-wbed.csv") if GIAB06 != "." else [],
-        pjoin(WD, "giab-v0.6-def.refine.csv") if GIAB06 != "." else [],
-        pjoin(WD, "giab-v0.6-wbed.refine.csv") if GIAB06 != "." else [],
-
-
-rule copy_truth:
-    input:
-        "data/HG002_grch37.vcf.gz",
     output:
-        pjoin(WD, "truths", "severus-paper.vcf.gz"),
+        pjoin(WD, "truvari.csv"),
     shell:
         """
-        cp {input} {output}
-        cp {input}.tbi {output}.tbi
+        python3 ./scripts/format_truvari.py {WD} > {output}
         """
 
 
-# rule plot_truth:
-#     input:
-#         expand(pjoin(WD, "truths", "{truth}.vcf.gz"), truth=TRUTHS),
-#     output:
-#         pjoin(WD, "truths", "stats.png"),
-#     params:
-#         tdir=pjoin(WD, "truths"),
-#     conda:
-#         "./envs/seaborn.yml"
-#     shell:
-#         """
-#         python3 ./scripts/plot_truth.py {params.tdir}
-#         """
-
-
-rule plot_truvari_all:
+rule format_truvari_giab:
     input:
+        # from truvari_giab.smk
         expand(
-            pjoin(WD, "{truth}.truvari-{opt}.csv"), truth=TRUTHS, opt=truvari_options
+            pjoin(WD, "{ref}", "truvari-giab", "11", "{opt}", "{caller}"),
+            ref=references,
+            opt=["full", "conf"],
+            caller=CALLERS,
         ),
+        # expand(
+        #     pjoin(WD, "hg19", "truvari-giab", "06", "{opt}", "{caller}"),
+        #     opt=["full", "conf"],
+        #     caller=CALLERS,
+        # ),
     output:
-        pjoin(WD, "truvari-all.f1.png"),
-    conda:
-        "./envs/seaborn.yml"
+        pjoin(WD, "truvari-giab.csv"),
     shell:
         """
-        python3 ./scripts/plot_truvari.py all {WD}
+        python3 ./scripts/format_truvari_giab.py {WD} > {output}
         """
 
 
-# rule vcf2gz:
-#     input:
-#         "{fname}.vcf",
-#     output:
-#         "{fname}.vcf.gz",
-#     params:
-#         tmp_prefix="{fname}.bcftools-sort-tmp",
-#     conda:
-#         "./envs/bcftools.yml"
-#     shell:
-#         """
-#         mkdir -p {params.tmp_prefix}
-#         bcftools sort -T {params.tmp_prefix} -Oz {input} > {output}
-#         tabix -p vcf {output}
-#         """
+#         # from callers-asm-post.smk
+#         expand(pjoin(WD, "truths", "{truth}.haps-w500.paf"), truth=TRUTHS),
+#         expand(pjoin(WD, "truths-confident", "{truth}.haps-w500.paf"), truth=TRUTHS),

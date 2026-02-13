@@ -1,12 +1,8 @@
-BAM = pjoin(WD, "minimap2.bam")
-BAM_HT = pjoin(WD, "minimap2-haplotagged.bam")
-
-
 rule faidx:
     input:
-        REF,
+        pjoin(WD, "input", "refs", "{ref}.fa"),
     output:
-        REF + ".fai",
+        pjoin(WD, "input", "refs", "{ref}.fa.fai"),
     conda:
         "../envs/samtools.yml"
     shell:
@@ -17,10 +13,10 @@ rule faidx:
 
 rule align_reads:
     input:
-        fa=REF,
+        fa=pjoin(WD, "input", "refs", "{ref}.fa"),
         fq=FQ,
     output:
-        bam=BAM,
+        bam=pjoin(WD, "{ref}", "alignments.bam"),
     threads: workflow.cores
     conda:
         "../envs/minimap2.yml"
@@ -33,27 +29,32 @@ rule align_reads:
 
 rule deepvariant:
     input:
-        fa=REF,
-        bam=BAM,
+        fa=pjoin(WD, "input", "refs", "{ref}.fa"),
+        fai=pjoin(WD, "input", "refs", "{ref}.fa.fai"),
+        bam=rules.align_reads.output.bam,
     output:
-        vcf=pjoin(WD, "deepvariant.vcf.gz"),
+        vcf=pjoin(WD, "{ref}", "deepvariant.vcf.gz"),
+    params:
+        # XXX: ugly workaround, this might not work everytime
+        bind="/" + WD.split("/")[1],
     threads: workflow.cores
     conda:
         "../envs/deepvariant.yml"
     shell:
         """
-        singularity run --bind /:/wd docker://google/deepvariant:1.8.0 /opt/deepvariant/bin/run_deepvariant --model_type PACBIO --ref /wd/{input.fa} --reads /wd/{input.bam} --output_vcf /wd/{output.vcf} --num_shards {threads} --sample_name {SAMPLE_NAME}
+        singularity run --bind {params.bind}:{params.bind} docker://google/deepvariant:1.9.0 /opt/deepvariant/bin/run_deepvariant --model_type PACBIO --ref {input.fa} --reads {input.bam} --output_vcf {output.vcf} --num_shards {threads} --sample_name {SAMPLE_NAME}
         # tabix -p vcf {output.vcf}
         """
 
 
 rule whathshap:
     input:
-        fa=REF,
-        bam=BAM,
+        fa=pjoin(WD, "input", "refs", "{ref}.fa"),
+        fai=pjoin(WD, "input", "refs", "{ref}.fa.fai"),
+        bam=rules.align_reads.output.bam,
         vcf=rules.deepvariant.output.vcf,
     output:
-        vcf=pjoin(WD, "deepvariant-phased.vcf.gz"),
+        vcf=pjoin(WD, "{ref}", "deepvariant-phased.vcf.gz"),
     threads: workflow.cores
     conda:
         "../envs/whatshap.yml"
@@ -66,11 +67,12 @@ rule whathshap:
 
 rule wh_haplo:
     input:
-        fa=REF,
-        bam=BAM,
+        fa=pjoin(WD, "input", "refs", "{ref}.fa"),
+        fai=pjoin(WD, "input", "refs", "{ref}.fa.fai"),
+        bam=rules.align_reads.output.bam,
         vcf=rules.whathshap.output.vcf,
     output:
-        bam=BAM_HT,
+        bam=pjoin(WD, "{ref}", "alignments-ht.bam"),
     threads: workflow.cores
     conda:
         "../envs/whatshap.yml"

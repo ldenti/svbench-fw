@@ -1,48 +1,34 @@
-DIPBED = pjoin(WD, "truths", "dipcall", "prefix.dip.bed")
-HAPBED = pjoin(WD, "truths", "hapdiff", "confident_regions.bed")
-BED = pjoin(WD, "truths", "confident_regions.both.bed")
+min_l = 30
 
-rule intersect_bed:
-    input:
-        bed1=DIPBED,
-        bed2=HAPBED,
-    output:
-        bed=BED,
-    conda:
-        "../envs/bedtools.yml"
-    shell:
-        """
-        bedtools intersect -a {input.bed1} -b {input.bed2} > {output.bed}
-        """
-
-rule subset:
-    input:
-        vcf=pjoin(WD, "truths", "{asmcaller}.vcf.gz"),
-        bed=lambda wildcards: HAPBED if wildcards.asmcaller == "hapdiff" else DIPBED,
-    output:
-        vcf=pjoin(WD, "truths-confident", "{asmcaller}.vcf.gz"),
-    shell:
-        """
-        bedtools intersect -header -u -a {input.vcf} -b {input.bed} | bgzip -c > {output.vcf}
-        tabix -p vcf {output.vcf}
-        """
+# rule intersect_bed:
+#     input:
+#         bed1=DIPBED,
+#         bed2=HAPBED,
+#     output:
+#         bed=BED,
+#     conda:
+#         "../envs/bedtools.yml"
+#     shell:
+#         """
+#         bedtools intersect -a {input.bed1} -b {input.bed2} > {output.bed}
+#         """
 
 
 rule dipcall:
     input:
-        fa=REF,
+        fa=pjoin(WD, "input", "refs", "{ref}.fa"),
         # bed=PARBED,
-        hap1=HAP1,  # paternal
-        hap2=HAP2,  # maternal
+        hap1=pjoin(WD, "input", "asm-{a}", "hap1.fa"),
+        hap2=pjoin(WD, "input", "asm-{a}", "hap2.fa"),
     output:
-        vcf=pjoin(WD, "truths", "dipcall", "prefix.dip.vcf.gz"),
-        bed=pjoin(WD, "truths", "dipcall", "prefix.dip.bed"),  # DIPBED
-        bam1=pjoin(WD, "truths", "dipcall", "prefix.hap1.bam"),
-        bam2=pjoin(WD, "truths", "dipcall", "prefix.hap2.bam"),
+        vcf=pjoin(WD, "{ref}", "asmcallsets-{a}", "dipcall", "prefix.dip.vcf.gz"),
+        bed=pjoin(WD, "{ref}", "asmcallsets-{a}", "dipcall", "prefix.dip.bed"),
+        bam1=pjoin(WD, "{ref}", "asmcallsets-{a}", "dipcall", "prefix.hap1.bam"),
+        bam2=pjoin(WD, "{ref}", "asmcallsets-{a}", "dipcall", "prefix.hap2.bam"),
     params:
-        wdir=pjoin(WD, "truths", "dipcall"),
-        prefix=pjoin(WD, "truths", "dipcall", "prefix"),
-        mak=pjoin(WD, "truths", "dipcall.mak"),
+        wdir=pjoin(WD, "{ref}", "asmcallsets-{a}", "dipcall"),
+        prefix=pjoin(WD, "{ref}", "asmcallsets-{a}", "dipcall", "prefix"),
+        mak=pjoin(WD, "{ref}", "asmcallsets-{a}", "dipcall.mak"),
     threads: workflow.cores
     conda:
         "../envs/dipcall.yml"
@@ -59,17 +45,17 @@ rule dipcall:
 
 rule clean_dipcall:
     input:
-        fai=REF + ".fai",
-        bed=pjoin(WD, "truths", "dipcall", "prefix.dip.bed"),
-        vcf=pjoin(WD, "truths", "dipcall", "prefix.dip.vcf.gz"),
+        fai=pjoin(WD, "input", "refs", "{ref}.fa.fai"),
+        bed=rules.dipcall.output.bed,
+        vcf=rules.dipcall.output.vcf,
     output:
-        vcf=pjoin(WD, "truths", "dipcall.vcf.gz"),
-        bed=pjoin(WD, "truths", "dipcall.bed"),
+        vcf=pjoin(WD, "{ref}", "asmcallsets-{a}", "dipcall.vcf.gz"),
+        bed=pjoin(WD, "{ref}", "asmcallsets-{a}", "dipcall.bed"),
     conda:
         "../envs/dipcall.yml"
     shell:
         """
-        bcftools reheader --fai {input.fai} {input.vcf} | bcftools norm --multiallelics - | bcftools view -v indels -i '(ILEN <= -30 || ILEN >= 30)' -Oz > {output.vcf}
+        bcftools reheader --fai {input.fai} {input.vcf} | bcftools norm --multiallelics - | bcftools view -v indels -i '(ILEN <= -{min_l} || ILEN >= {min_l})' -Oz > {output.vcf}
         tabix -p vcf {output.vcf}
         cp {input.bed} {output.bed}
         """
@@ -79,71 +65,35 @@ rule clean_dipcall:
 ######################################################################
 ######################################################################
 
-# rule merge_bam:
-#     input:
-#         bam1=pjoin(WD, "dipcall", "prefix.hap1.bam"),
-#         bam2=pjoin(WD, "dipcall", "prefix.hap2.bam"),
-#     output:
-#         bam=pjoin(WD, "dipcall", "prefix.dip.bam"),
-#     conda:
-#         "../envs/samtools.yml"
-#     shell:
-#         """
-#         samtools merge {output.bam} {input.bam1} {input.bam2}
-#         samtools index {output.bam}
-#         """
-
-
-# rule cutesv_asm:
-#     input:
-#         fa=REF,
-#         bam=pjoin(WD, "dipcall", "prefix.dip.bam"),
-#     output:
-#         vcf=pjoin(WD, "cutesv-asm.vcf"),
-#     params:
-#         tmp=pjoin(WD, "cutesv-asm.tmp"),
-#     conda:
-#         "../envs/cutesv.yml"
-#     shell:
-#         """
-#         mkdir -p {params.tmp}
-#         cuteSV {input.bam} {input.fa} {output.vcf}.pre {params.tmp} -s 1 --genotype --report_readid -p -1 -mi 500 -md 500 --max_cluster_bias_INS 1000 --diff_ratio_merging_INS 0.9 --max_cluster_bias_DEL 1000 --diff_ratio_merging_DEL 0.5
-#         python3 $CONDA_PREFIX/lib/python3.6/site-packages/cuteSV/diploid_calling.py {output.vcf}.pre {output.vcf}
-#         """
-
-######################################################################
-######################################################################
-######################################################################
-
 
 rule svim_asm:
     input:
-        fa=REF,
-        bam1=pjoin(WD, "truths", "dipcall", "prefix.hap1.bam"),
-        bam2=pjoin(WD, "truths", "dipcall", "prefix.hap2.bam"),
+        fa=pjoin(WD, "input", "refs", "{ref}.fa"),
+        bam1=rules.dipcall.output.bam1,
+        bam2=rules.dipcall.output.bam2,
     output:
-        vcf=pjoin(WD, "truths", "svim-asm", "variants.vcf"),
+        vcf=pjoin(WD, "{ref}", "asmcallsets-{a}", "svim-asm", "variants.vcf"),
     params:
-        wd=pjoin(WD, "truths", "svim-asm"),
+        wd=pjoin(WD, "{ref}", "asmcallsets-{a}", "svim-asm"),
     conda:
         "../envs/svimasm.yml"
     shell:
         """
         mkdir -p {params.wd}
-        svim-asm diploid --min_sv_size 30 {params.wd} {input.bam1} {input.bam2} {input.fa}
+        svim-asm diploid --min_sv_size {min_l} {params.wd} {input.bam1} {input.bam2} {input.fa}
         """
 
 
 rule clean_svim_asm:
     input:
-        vcf=pjoin(WD, "truths", "svim-asm", "variants.vcf"),
+        vcf=rules.svim_asm.output.vcf,
     output:
-        vcf=pjoin(WD, "truths", "svim-asm.vcf.gz"),
+        vcf=pjoin(WD, "{ref}", "asmcallsets-{a}", "svim-asm.vcf.gz"),
     conda:
         "../envs/dipcall.yml"
     shell:
         """
-        bcftools view -Oz -v indels -i '(ILEN <= -30 || ILEN >= 30)' {input.vcf} > {output.vcf}
+        bcftools view -Oz -v indels -i '(ILEN <= -{min_l} || ILEN >= {min_l})' {input.vcf} > {output.vcf}
         tabix -p vcf {output.vcf}
         """
 
@@ -169,15 +119,15 @@ rule get_hapdiff:
 
 rule hapdiff:
     input:
-        exe=pjoin(WD, "software", "hapdiff", "hapdiff.py"),
-        fa=REF,
-        hap1=HAP1,
-        hap2=HAP2,
+        exe=rules.get_hapdiff.output.exe,
+        fa=pjoin(WD, "input", "refs", "{ref}.fa"),
+        hap1=pjoin(WD, "input", "asm-{a}", "hap1.fa"),
+        hap2=pjoin(WD, "input", "asm-{a}", "hap2.fa"),
     output:
-        vcf=pjoin(WD, "truths", "hapdiff", "hapdiff_phased.vcf.gz"),
-        bed=pjoin(WD, "truths", "hapdiff", "confident_regions.bed"),
+        vcf=pjoin(WD, "{ref}", "asmcallsets-{a}", "hapdiff", "hapdiff_phased.vcf.gz"),
+        bed=pjoin(WD, "{ref}", "asmcallsets-{a}", "hapdiff", "confident_regions.bed"),
     params:
-        outd=pjoin(WD, "truths", "hapdiff"),
+        outd=pjoin(WD, "{ref}", "asmcallsets-{a}", "hapdiff"),
     conda:
         "../envs/hapdiff.yml"
     threads: workflow.cores
@@ -189,13 +139,37 @@ rule hapdiff:
 
 rule hapdiff_post:
     input:
-        vcf=pjoin(WD, "truths", "hapdiff", "hapdiff_phased.vcf.gz"),
+        vcf=rules.hapdiff.output.vcf,
     output:
-        vcf=pjoin(WD, "truths", "hapdiff.vcf.gz"),
+        vcf=pjoin(WD, "{ref}", "asmcallsets-{a}", "hapdiff.vcf.gz"),
     conda:
         "../envs/dipcall.yml"
     shell:
         """
-        bcftools view -Oz -v indels -i '(ILEN <= -30 || ILEN >= 30)' {input.vcf} > {output.vcf}
+        bcftools view -Oz -v indels -i '(ILEN <= -{min_l} || ILEN >= {min_l})' {input.vcf} > {output.vcf}
+        tabix -p vcf {output.vcf}
+        """
+
+
+######################################################################
+######################################################################
+######################################################################
+
+
+rule subset:
+    input:
+        vcf=pjoin(WD, "{ref}", "asmcallsets-{a}", "{asmcaller}.vcf.gz"),
+        bed=lambda wildcards: (
+            rules.hapdiff.output.bed
+            if wildcards.asmcaller == "hapdiff"
+            else rules.dipcall.output.bed
+        ),
+    output:
+        vcf=pjoin(WD, "{ref}", "asmcallsets-{a}.confident", "{asmcaller}.vcf.gz"),
+    conda:
+        "../envs/bedtools.yml"
+    shell:
+        """
+        bedtools intersect -header -u -a {input.vcf} -b {input.bed} | bgzip -c > {output.vcf}
         tabix -p vcf {output.vcf}
         """

@@ -3,4 +3,4 @@ channels:
   - conda-forge
   - bioconda
 dependencies:
-  - sawfish=2.0.0
+  - sawfish=2.2.1

@@ -24,8 +24,7 @@ def main():
 
     print(
         "Reference",
-        "Assembly",
-        "ASM-Caller",
+        "GIAB",
         "Setting",
         "Refined",
         "Caller",
@@ -41,7 +40,7 @@ def main():
     )
 
     for fn in glob.glob(
-        os.path.join(indir, "*", "truvari", "*", "*", "*", "*", "summary.json")
+        os.path.join(indir, "*", "truvari-giab", "*", "*", "*", "summary.json")
     ):
         fields = fn.split("/")
 
@@ -49,10 +48,9 @@ def main():
         caller, s, q = tool.split("-")
         s = s[1:]
         q = q[1:]
-        asmc = fields[-3]
-        asm = fields[-4]
-        setting = fields[-5]
-        ref = fields[-7]
+        setting = fields[-3]
+        giabv = fields[-4]
+        ref = fields[-6]
 
         for refine in ["norefined", "refined"]:
             f = fn
@@ -64,8 +62,7 @@ def main():
             F = round(2 * (P * R) / (P + R) if P + R != 0 else 0.0, 1)
             print(
                 ref,
-                asm,
-                asmc,
+                giabv,
                 setting,
                 refine == "refined",
                 caller,

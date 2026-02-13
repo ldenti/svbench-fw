@@ -1,44 +1,108 @@
-name: HG002
-fa: /nfs/projects6/chm13v2.0.fa
-fq: /nfs/projects6/hg002/hprc-hifi-19k.fq.gz
-hap1: /nfs/projects6/hg002/HG002.1.fa
-hap2: /nfs/projects6/hg002/HG002.2.fa
-trf: /nfs/projects6/human_chm13v2.0_maskedY_rCRS.trf.bed
+wd: /data/svbench-chr21/SMK-OUT
+#
+ref:
+  hg19: /data/svbench-chr21/hg19.ref.fa
+  hg38: /data/svbench-chr21/hg38.ref.fa
+  chm13: /data/svbench-chr21/chm13.ref.fa
+trf:
+  hg19: /data/svbench-chr21/hg19.trf.bed
+  hg38: /data/svbench-chr21/hg38.trf.bed
+  chm13: /data/svbench-chr21/chm13.trf.bed
 strat:
-  easy: /nfs/projects6/giab-strat/CHM13_notinalldifficultregions.bed
-  hard: /nfs/projects6/giab-strat/CHM13_alldifficultregions.bed
+  easy:
+    hg19: /data/svbench-chr21/giab-strats/easy/hg19.bed
+    hg38: /data/svbench-chr21/giab-strats/easy/hg38.bed
+    chm13: /data/svbench-chr21/giab-strats/easy/chm13.bed
+  hard:
+    hg19: /data/svbench-chr21/giab-strats/hard/hg19.bed
+    hg38: /data/svbench-chr21/giab-strats/hard/hg38.bed
+    chm13: /data/svbench-chr21/giab-strats/hard/chm13.bed
+#
+# TODO: allows for more samples
+name: HG002
+fq: /data/svbench-chr21/reads.fq.gz
+haps:
+  hprc:
+    - /data/svbench-chr21/hap1.fa.gz
+    - /data/svbench-chr21/hap2.fa.gz
+  giab:
+    - /data/svbench-chr21/hap1.fa.gz
+    - /data/svbench-chr21/hap2.fa.gz
+#
+# XXX: make a truthsets:
 giab11:
-  vcf: /nfs/projects6/giab-v1.1/CHM13v2.0-HG2.sv.vcf.gz
-  bed: /nfs/projects6/giab-v1.1/CHM13v2.0_HG2-T2TQ100-V1.1_stvar.benchmark.bed
+  vcf:
+    hg19: /data/svbench-chr21/hg19.giab11.vcf.gz
+    hg38: /data/svbench-chr21/hg38.giab11.vcf.gz
+    chm13: /data/svbench-chr21/chm13.giab11.vcf.gz
+  bed:
+    hg19: /data/svbench-chr21/hg19.giab11.bed
+    hg38: /data/svbench-chr21/hg38.giab11.bed
+    chm13: /data/svbench-chr21/chm13.giab11.bed
 giab06:
-  vcf: .
-  bed: .
-wd: /nfs/projects6/hg002/15k-36x-seqII2.0/t2t
-truths:
+  vcf:
+    hg19: /data/svbench-chr21/giab06.vcf.gz
+  bed:
+    hg19: /data/svbench-chr21/giab06.bed
+#
+asm-callers:
   - dipcall
   - svim-asm
   - hapdiff
+#
 callers:
-  - sniffles
-  - cutesv-w2
-  - cutesv-w4
-  - cutesv-w10 # default
-  - SVDSS-w2 # default
-  - SVDSS-w4
-  - SVDSS2ht-q0.98-w2
-  - SVDSS2ht-q0.98-w4
-  - severus-w2
-  - severus-w3 # default
-  - severus-w4
-  - debreak
-  - svisionpro-w2
-  - svisionpro-w4
-  - svisionpro-w5 # default
-  - sawfish
-  # uncomment for hg19
-  # - svdss-severus
-  # - cutesv-severus
-  # - debreak-severus
-  # - severus-severus
-  # - sniffles-severus
-  # - svisionpro-severus
+  debreak:
+    s:
+      - 0
+      - 2
+      - 4
+    q:
+      - 0
+      - 10
+      - 20
+  sawfish:
+    s:
+      - 0
+    q:
+      - 0
+      - 10
+      - 20
+  sniffles:
+    s:
+      - 0
+      - 2
+      - 4
+    q:
+      - 0
+      - 10
+      - 20
+  cutesv:
+    s:
+      - 2
+      - 4
+    q:
+      - 0
+      - 10
+      - 20
+  severus:
+    s:
+      - 2
+      - 4
+    q:
+      - 0
+      - 10
+      - 20
+  svisionpro:
+    s:
+      - 2
+      - 4
+    q:
+      - 0
+      - 10
+      - 20
+  SVDSS:
+    s:
+      - 2
+      - 4
+    q:
+      - 0

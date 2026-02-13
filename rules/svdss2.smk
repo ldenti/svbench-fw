@@ -1,17 +1,17 @@
-rule svdss2_index:
-    input:
-        fa=REF,
-    output:
-        fmd=REF + ".fmd",
-    threads: workflow.cores
-    log:
-        time=pjoin(WD, "times", "rb3-index.time"),
-    conda:
-        "../envs/svdss2.yml"
-    shell:
-        """
-        /usr/bin/time -vo {log.time} SVDSS index -t{threads} -d {input.fa} -o {output.fmd}
-        """
+# rule svdss2_index:
+#     input:
+#         fa=REF,
+#     output:
+#         fmd=REF + ".fmd",
+#     threads: workflow.cores
+#     log:
+#         time=pjoin(WD, "times", "rb3-index.time"),
+#     conda:
+#         "../envs/svdss2.yml"
+#     shell:
+#         """
+#         /usr/bin/time -vo {log.time} SVDSS index -t{threads} -d {input.fa} -o {output.fmd}
+#         """
 
 
 rule svdss2_smooth:
