@@ -1,6 +1,6 @@
 # from snakemake.utils import min_version
 # min_version("6.4.1")
-import os
+import sys, os
 from os.path import join as pjoin
 
 
@@ -11,7 +11,7 @@ configfile: "config/config.yml"
 def lns(src, dst):
     if os.path.exists(dst):
         return
-    print(f"ln -s {src} {dst}")
+    print(f"ln -f -s {src} {dst}")
     os.symlink(src, dst)
 
 
@@ -27,6 +27,13 @@ for ref, fn in config["ref"].items():
     references.append(ref)
     # XXX: assuming not gzipped, but it should still work if no tool makes any assumption from extension
     lns(fn, pjoin(WD, "input", "refs", f"{ref}.fa"))
+    if not os.path.exists(fn + ".fai"):
+        print(
+            "ERROR: please index the reference with 'samtools faidx'",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+    lns(fn + ".fai", pjoin(WD, "input", "refs", f"{ref}.fa.fai"))
 
 # TRFs = config["trf"]
 os.makedirs(pjoin(WD, "input", "trfs"), exist_ok=True)
@@ -53,14 +60,14 @@ for t, fns in config["giab11"].items():
             lns(fn + ".tbi", pjoin(WD, "input", "giab11", f"{ref}.vcf.gz.tbi"))
 
 # GIAB06s = config["giab06"]
-# for t, fns in config["giab06"].items():
-#     os.makedirs(pjoin(WD, "input", "giab06"), exist_ok=True)
-#     for ref, fn in fns.items():
-#         if t == "bed":
-#             lns(fn, pjoin(WD, "input", "giab06", f"{ref}.bed"))
-#         else:
-#             lns(fn, pjoin(WD, "input", "giab06", f"{ref}.vcf.gz"))
-#             lns(fn, pjoin(WD, "input", "giab06", f"{ref}.vcf.gz.tbi"))
+for t, fns in config["giab06"].items():
+    os.makedirs(pjoin(WD, "input", "giab06"), exist_ok=True)
+    for ref, fn in fns.items():
+        if t == "bed":
+            lns(fn, pjoin(WD, "input", "giab06", f"{ref}.bed"))
+        else:
+            lns(fn, pjoin(WD, "input", "giab06", f"{ref}.vcf.gz"))
+            lns(fn, pjoin(WD, "input", "giab06", f"{ref}.vcf.gz.tbi"))
 
 SAMPLE_NAME = config["name"]
 FQ = config["fq"]
@@ -74,13 +81,14 @@ for n, fns in config["haps"].items():
         lns(fn, pjoin(WD, "input", f"asm-{n}", f"hap{i}.fa"))
 
 ASMC = config["asm-callers"]
+print("===", len(ASMC), "ASSEMBLY-BASED CALLERS: ", ", ".join(ASMC))
 
 CALLERS = []
 for caller, opts in config["callers"].items():
     for s in opts["s"]:
         for q in opts["q"]:
             CALLERS.append(f"{caller}-s{s}-q{q}")
-print(CALLERS)
+print("===", len(CALLERS), "READ-BASED CALLERS:", ", ".join(CALLERS))
 
 """
 A note on callers: I tried to use output VCFs as they are. But sometimes,
@@ -113,13 +121,10 @@ include: "rules/svdss2-ht.smk"
 include: "rules/svdss.smk"
 # truvari
 include: "rules/truvari.smk"
-include: "rules/truvari-giab.smk"
 
 
 rule all:
     input:
-        # from preprocess.smk
-        expand(pjoin(WD, "{ref}", "alignments-ht.bam"), ref=references),
         # from callers-asm.smk
         expand(
             pjoin(WD, "{ref}", "asmcallsets-{a}", "{asmc}.vcf.gz"),
@@ -173,8 +178,23 @@ rule all:
             w=[500],
         ),
 
+rule asmcallers:
+    input:
+        expand(
+            pjoin(WD, "{ref}", "asmcallsets-{a}", "{asmc}.vcf.gz"),
+            ref=references,
+            a=asms,
+            asmc=ASMC,
+        ),
 
-rule format_truvari:
+rule callers:
+    input:
+        expand(pjoin(WD, "{ref}", "callsets", "{caller}.vcf.gz"),
+               ref=references,
+               caller=CALLERS,
+        ),
+
+rule asm_benchmarking:
     input:
         # from truvari.smk
         expand(
@@ -193,20 +213,20 @@ rule format_truvari:
         """
 
 
-rule format_truvari_giab:
+rule giab_benchmarking:
     input:
-        # from truvari_giab.smk
+        # from truvari.smk
         expand(
             pjoin(WD, "{ref}", "truvari-giab", "11", "{opt}", "{caller}"),
             ref=references,
             opt=["full", "conf"],
             caller=CALLERS,
         ),
-        # expand(
-        #     pjoin(WD, "hg19", "truvari-giab", "06", "{opt}", "{caller}"),
-        #     opt=["full", "conf"],
-        #     caller=CALLERS,
-        # ),
+        expand(
+            pjoin(WD, "hg19", "truvari-giab", "06", "{opt}", "{caller}"),
+            opt=["full", "conf"],
+            caller=CALLERS,
+        ),
     output:
         pjoin(WD, "truvari-giab.csv"),
     shell:

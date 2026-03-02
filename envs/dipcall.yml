@@ -5,3 +5,4 @@ channels:
 dependencies:
   - dipcall=0.3
   - bedtools
+  - bcftools
