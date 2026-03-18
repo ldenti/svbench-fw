@@ -138,6 +138,7 @@ rule truvari_strat:
         fi
         """
 
+
 rule truvari_giab:
     input:
         fa=pjoin(WD, "input", "refs", "{ref}.fa"),
