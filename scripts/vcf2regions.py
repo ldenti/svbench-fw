@@ -24,6 +24,8 @@ def main():
                 ]
     for chrom, ints in intervals.items():
         for s, e, GTs in ints:
+            if s < 0 or e < 0:
+                continue
             first, second = False, False
             for gt in GTs:
                 if gt[0] == 1:

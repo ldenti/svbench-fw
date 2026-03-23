@@ -194,6 +194,20 @@ rule asmcallers:
             a=asms,
             asmc=ASMC,
         ),
+        expand(
+            pjoin(WD, "{ref}", "asmcallsets-{a}", "{asmc}.haps-w{w}.paf"),
+            ref=references,
+            a=asms,
+            asmc=ASMC,
+            w=[500],
+        ),
+        expand(
+            pjoin(WD, "{ref}", "asmcallsets-{a}.confident", "{asmc}.haps-w{w}.paf"),
+            ref=references,
+            a=asms,
+            asmc=ASMC,
+            w=[500],
+        ),
 
 
 rule callers:
@@ -263,8 +277,3 @@ rule giab_benchmarking:
         """
         python3 ./scripts/format_truvari_giab.py {WD} > {output}
         """
-
-
-#         # from callers-asm-post.smk
-#         expand(pjoin(WD, "truths", "{truth}.haps-w500.paf"), truth=TRUTHS),
-#         expand(pjoin(WD, "truths-confident", "{truth}.haps-w500.paf"), truth=TRUTHS),
