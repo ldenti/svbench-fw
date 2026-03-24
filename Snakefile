@@ -88,6 +88,7 @@ for n, fns in config["haps"].items():
         lns(fn, pjoin(WD, "input", f"asm-{n}", f"hap{i}.fa"))
 
 ASMC = config["asm-callers"]
+TAT_STRINGS = [f"{x}-against-{y}" for x in ASMC for y in ASMC if x != y]
 print("===", len(ASMC), "ASSEMBLY-BASED CALLERS: ", ", ".join(ASMC))
 
 CALLERS = []
@@ -161,15 +162,13 @@ rule all:
                 "{ref}",
                 "asmcallsets-{a}",
                 "comparison-{mode}",
-                "{truth2}-against-{truth1}",
+                "{tat}",
             ),
             ref=references,
             a=asms,
             mode=["full", "conf"],
-            truth1=ASMC,
-            truth2=ASMC,
+            tat=TAT_STRINGS,
         ),
-        #
         expand(
             pjoin(WD, "{ref}", "asmcallsets-{a}", "{asmc}.haps-w{w}.paf"),
             ref=references,
@@ -207,6 +206,23 @@ rule asmcallers:
             a=asms,
             asmc=ASMC,
             w=[500],
+        ),
+
+
+rule asmcallers_comparison:
+    input:
+        expand(
+            pjoin(
+                WD,
+                "{ref}",
+                "asmcallsets-{a}",
+                "comparison-{mode}",
+                "{tat}",
+            ),
+            ref=references,
+            a=asms,
+            mode=["full", "conf"],
+            tat=TAT_STRINGS,
         ),
 
 
