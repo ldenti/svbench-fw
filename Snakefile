@@ -74,7 +74,7 @@ if "giab06" in config:
                 lns(fn, pjoin(WD, "input", "giab06", f"{ref}.bed"))
             else:
                 lns(fn, pjoin(WD, "input", "giab06", f"{ref}.vcf.gz"))
-                lns(fn, pjoin(WD, "input", "giab06", f"{ref}.vcf.gz.tbi"))
+                lns(fn + ".tbi", pjoin(WD, "input", "giab06", f"{ref}.vcf.gz.tbi"))
 
 SAMPLE_NAME = config["name"]
 FQ = config["fq"]
