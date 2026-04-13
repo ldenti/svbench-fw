@@ -56,16 +56,6 @@ for strat, fns in config["strat"].items():
         lns(fn, pjoin(WD, "input", "strats", strat, f"{ref}.bed"))
 
 
-if "giab11" in config:
-    for t, fns in config["giab11"].items():
-        os.makedirs(pjoin(WD, "input", "giab11"), exist_ok=True)
-        for ref, fn in fns.items():
-            if t == "bed":
-                lns(fn, pjoin(WD, "input", "giab11", f"{ref}.bed"))
-            else:
-                lns(fn, pjoin(WD, "input", "giab11", f"{ref}.vcf.gz"))
-                lns(fn + ".tbi", pjoin(WD, "input", "giab11", f"{ref}.vcf.gz.tbi"))
-
 if "giab06" in config:
     for t, fns in config["giab06"].items():
         os.makedirs(pjoin(WD, "input", "giab06"), exist_ok=True)
@@ -75,6 +65,16 @@ if "giab06" in config:
             else:
                 lns(fn, pjoin(WD, "input", "giab06", f"{ref}.vcf.gz"))
                 lns(fn + ".tbi", pjoin(WD, "input", "giab06", f"{ref}.vcf.gz.tbi"))
+
+if "giab50" in config:
+    for t, fns in config["giab50"].items():
+        os.makedirs(pjoin(WD, "input", "giab50"), exist_ok=True)
+        for ref, fn in fns.items():
+            if t == "bed":
+                lns(fn, pjoin(WD, "input", "giab50", f"{ref}.bed"))
+            else:
+                lns(fn, pjoin(WD, "input", "giab50", f"{ref}.vcf.gz"))
+                lns(fn + ".tbi", pjoin(WD, "input", "giab50", f"{ref}.vcf.gz.tbi"))
 
 SAMPLE_NAME = config["name"]
 FQ = config["fq"]
@@ -277,7 +277,7 @@ rule giab_benchmarking:
     input:
         # from truvari.smk
         expand(
-            pjoin(WD, "{ref}", "truvari-giab", "11", "{opt}", "{caller}"),
+            pjoin(WD, "{ref}", "truvari-giab", "50", "{opt}", "{caller}"),
             ref=references,
             opt=["full", "conf"],
             caller=CALLERS,

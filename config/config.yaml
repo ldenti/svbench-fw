@@ -1,0 +1,120 @@
+wd: /projects6/svbench-natcomm/hg002-OUT
+#
+ref:
+  hg19: /projects6/human_g1k_v37.fasta
+  hg38: /projects6/GCA_000001405.15_GRCh38_no_alt_analysis_set.fa
+  chm13: /projects6/chm13v2.0.fa
+trf:
+  hg19: /projects6/human_hs37d5.trf.bed
+  hg38: /projects6/human_GRCh38_no_alt_analysis_set.trf.bed
+  chm13: /projects6/human_chm13v2.0_maskedY_rCRS.trf.bed
+strat:
+  hard:
+    chm13: /projects6/svbench-natcomm/hg002/giab-strat/CHM13@all/Union/CHM13_alldifficultregions.bed
+    hg38: /projects6/svbench-natcomm/hg002/giab-strat/GRCh38@all/Union/GRCh38_alldifficultregions.bed
+    hg19: /projects6/svbench-natcomm/hg002/giab-strat/GRCh37@all/Union/GRCh37_alldifficultregions.bed
+  easy:
+    chm13: /projects6/svbench-natcomm/hg002/giab-strat/CHM13@all/Union/CHM13_notinalldifficultregions.bed
+    hg38: /projects6/svbench-natcomm/hg002/giab-strat/GRCh38@all/Union/GRCh38_notinalldifficultregions.bed
+    hg19: /projects6/svbench-natcomm/hg002/giab-strat/GRCh37@all/Union/GRCh37_notinalldifficultregions.bed
+  segdups:
+    chm13: /projects6/svbench-natcomm/hg002/giab-strat/CHM13@all/SegmentalDuplications/CHM13_segdups.bed
+    hg38: /projects6/svbench-natcomm/hg002/giab-strat/GRCh38@all/SegmentalDuplications/GRCh38_segdups.bed
+    hg19: /projects6/svbench-natcomm/hg002/giab-strat/GRCh37@all/SegmentalDuplications/GRCh37_segdups.bed
+  lowmap:
+    chm13: /projects6/svbench-natcomm/hg002/giab-strat/CHM13@all/Mappability/CHM13_lowmappabilityall.bed
+    hg38: /projects6/svbench-natcomm/hg002/giab-strat/GRCh38@all/Mappability/GRCh38_lowmappabilityall.bed
+    hg19: /projects6/svbench-natcomm/hg002/giab-strat/GRCh37@all/Mappability/GRCh37_lowmappabilityall.bed
+  lowcomplex:
+    chm13: /projects6/svbench-natcomm/hg002/giab-strat/CHM13@all/LowComplexity/CHM13_AllTandemRepeatsandHomopolymers_slop5.bed
+    hg38: /projects6/svbench-natcomm/hg002/giab-strat/GRCh38@all/LowComplexity/GRCh38_AllTandemRepeatsandHomopolymers_slop5.bed
+    hg19: /projects6/svbench-natcomm/hg002/giab-strat/GRCh37@all/LowComplexity/GRCh37_AllTandemRepeatsandHomopolymers_slop5.bed
+#
+# TODO: allows for more samples
+name: HG002
+fq: /projects6/svbench-natcomm/hg002/hg002/hprc-hifi2.0-15k.fq.gz
+haps:
+  giab:
+    - /projects6/svbench-natcomm/hg002/giab-q100-asm/hg002v1.1.paternal.fasta
+    - /projects6/svbench-natcomm/hg002/giab-q100-asm/hg002v1.1.maternal.fasta
+  hprc:
+    - /projects6/svbench-natcomm/hg002/hprc-asm/HG002.1.fa
+    - /projects6/svbench-natcomm/hg002/hprc-asm/HG002.2.fa
+#
+# XXX: make a truthsets:
+giab50:
+  vcf:
+    hg19: /projects6/svbench-natcomm/hg002/giab-v5.0/hg19.sv.vcf.gz
+    hg38: /projects6/svbench-natcomm/hg002/giab-v5.0/hg38.sv.vcf.gz
+    chm13: /projects6/svbench-natcomm/hg002/giab-v5.0/chm13.sv.vcf.gz
+  bed:
+    hg19: /projects6/svbench-natcomm/hg002/giab-v5.0/HG002_GRCh37_v5.0q_stvar.benchmark.bed
+    hg38: /projects6/svbench-natcomm/hg002/giab-v5.0/HG002_GRCh38_v5.0q_stvar.benchmark.bed
+    chm13: /projects6/svbench-natcomm/hg002/giab-v5.0/HG002_CHM13v2.0_v5.0q_stvar.benchmark.bed
+giab06:
+  vcf:
+    hg19: /projects6/svbench-natcomm/hg002/giab-v0.6/HG002_SVs_Tier1_v0.6.vcf.gz
+  bed:
+    hg19: /projects6/svbench-natcomm/hg002/giab-v0.6/HG002_SVs_Tier1_v0.6.bed
+#
+asm-callers:
+  - dipcall
+  - svim-asm
+  - hapdiff
+#
+callers:
+  debreak:
+    s:
+      - 0
+      # - 2
+      # - 4
+    q:
+      # - 0
+      # - 10
+      - 20
+  sawfish:
+    s:
+      - 0
+    q:
+      # - 0
+      # - 10
+      - 20
+  sniffles:
+    s:
+      - 0
+      # - 2
+      # - 4
+    q:
+      # - 0
+      # - 10
+      - 20
+  cutesv:
+    s:
+      # - 2
+      - 4
+    q:
+      # - 0
+      # - 10
+      - 20
+  severus:
+    s:
+      # - 2
+      - 4
+    q:
+      # - 0
+      # - 10
+      - 20
+  svisionpro:
+    s:
+      # - 2
+      - 4
+    q:
+      # - 0
+      # - 10
+      - 20
+  SVDSS:
+    s:
+      # - 2
+      - 4
+    q:
+      - 0
