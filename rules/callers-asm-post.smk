@@ -72,7 +72,7 @@ rule remove_info:
         "../envs/sambcftools.yml"
     shell:
         """
-        bash ./scripts/remove_info_from_vcf.sh {input.vcf} | bcftools view -Oz -v indels -i '(ILEN <= -30 || ILEN >= 30)' > {output.vcf}
+        bash ./scripts/remove_info_from_vcf.sh {input.vcf} | bcftools view -Oz -i '(ILEN <= -50 || ILEN >= 50)' > {output.vcf}
         tabix -p vcf {output.vcf}
         """
 

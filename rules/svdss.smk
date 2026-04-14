@@ -54,7 +54,8 @@ rule svdss_call:
     shell:
         """
         n=$(ls {params.wd}/solution_batch_*.assembled.sfs | wc -l)
-        /usr/bin/time -vo {log.time} SVDSS call --reference {input.fa} --bam {input.bam} --threads {threads} --workdir {params.wd} --batches ${{n}} --min-cluster-weight {wildcards.s}
+        # NOTE: filter on length is "wrong" (>) in SVDSS, need to set to 49
+        /usr/bin/time -vo {log.time} SVDSS call --reference {input.fa} --bam {input.bam} --threads {threads} --workdir {params.wd} --batches ${{n}} --min-cluster-weight {wildcards.s} --min-sv-length 49
         cp {params.wd}/svs_poa.vcf {output.vcf}
         """
 

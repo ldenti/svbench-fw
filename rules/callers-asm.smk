@@ -1,4 +1,4 @@
-min_l = 30
+min_l = 50
 
 # rule intersect_bed:
 #     input:
@@ -126,6 +126,7 @@ rule hapdiff:
     output:
         vcf=pjoin(WD, "{ref}", "asmcallsets-{a}", "hapdiff", "hapdiff_phased.vcf.gz"),
         bed=pjoin(WD, "{ref}", "asmcallsets-{a}", "hapdiff", "confident_regions.bed"),
+        bed2=pjoin(WD, "{ref}", "asmcallsets-{a}", "hapdiff.bed"),
     params:
         outd=pjoin(WD, "{ref}", "asmcallsets-{a}", "hapdiff"),
     conda:
@@ -134,6 +135,7 @@ rule hapdiff:
     shell:
         """
         {input.exe} --reference {input.fa} --pat {input.hap1} --mat {input.hap2} --out-dir {params.outd} -t {threads}
+        cp {input.bed} {input.bed2}
         """
 
 

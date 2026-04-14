@@ -185,6 +185,7 @@ rule all:
         ),
 
 
+# === Assembly-based callers
 rule asmcallers:
     input:
         expand(
@@ -192,6 +193,24 @@ rule asmcallers:
             ref=references,
             a=asms,
             asmc=ASMC,
+        ),
+
+
+# === Analyses on assembly-based callers (all-vs-all + realignment)
+rule asmcallers_analyses:
+    input:
+        expand(
+            pjoin(
+                WD,
+                "{ref}",
+                "asmcallsets-{a}",
+                "comparison-{mode}",
+                "{tat}",
+            ),
+            ref=references,
+            a=asms,
+            mode=["full", "conf"],
+            tat=TAT_STRINGS,
         ),
         expand(
             pjoin(WD, "{ref}", "asmcallsets-{a}", "{asmc}.haps-w{w}.paf"),
@@ -209,23 +228,7 @@ rule asmcallers:
         ),
 
 
-rule asmcallers_comparison:
-    input:
-        expand(
-            pjoin(
-                WD,
-                "{ref}",
-                "asmcallsets-{a}",
-                "comparison-{mode}",
-                "{tat}",
-            ),
-            ref=references,
-            a=asms,
-            mode=["full", "conf"],
-            tat=TAT_STRINGS,
-        ),
-
-
+# === Read-based callers
 rule callers:
     input:
         expand(
@@ -254,6 +257,7 @@ rule asm_benchmarking_nostrats:
         """
 
 
+# === Benchmark read-based callers against assembly-based
 rule asm_benchmarking:
     input:
         # from truvari.smk
@@ -273,6 +277,7 @@ rule asm_benchmarking:
         """
 
 
+# === Benchmark read-based callers against giab/curated ground truths
 rule giab_benchmarking:
     input:
         # from truvari.smk
