@@ -58,7 +58,7 @@ rule clean_dipcall:
         """
         bcftools reheader --fai {input.fai} {input.vcf} | bcftools norm --multiallelics - | bcftools view -v indels -i '(ILEN <= -{min_l} || ILEN >= {min_l})' -Oz > {output.vcf}
         tabix -p vcf {output.vcf}
-        cp {input.bed} {output.bed}
+        sort -k1,1 -k2,2n {input.bed} | bedtools merge -i - > {output.bed}
         """
 
 
@@ -139,7 +139,7 @@ rule hapdiff:
     shell:
         """
         {input.exe} --reference {input.fa} --pat {input.hap1} --mat {input.hap2} --out-dir {params.outd} -t {threads}
-        cp {output.bed} {output.bed2}
+        sort -k1,1 -k2,2n {output.bed} | bedtools merge -i - > {output.bed2}
         """
 
 
