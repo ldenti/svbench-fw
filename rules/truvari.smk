@@ -187,7 +187,7 @@ rule stratify_giab:
             "ga4gh_with_refine.comp.vcf.gz",
         ),
     conda:
-        "./envs/bedtools.yml"
+        "../envs/bedtools.yml"
     shell:
         """
         bedtools intersect -header -a {input.tp_base} -b {input.bed} -u | bgzip -c > {output.tp_base}
@@ -301,7 +301,7 @@ rule stratify:
             "ga4gh_with_refine.comp.vcf.gz",
         ),
     conda:
-        "./envs/bedtools.yml"
+        "../envs/bedtools.yml"
     shell:
         """
         bedtools intersect -header -a {input.tp_base} -b {input.bed} -u | bgzip -c > {output.tp_base}

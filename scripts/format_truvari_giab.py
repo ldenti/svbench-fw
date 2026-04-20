@@ -34,15 +34,15 @@ def compute_prf(tp_comp, tp_base, fp, fn):
 def main():
     indir = sys.argv[1]
 
-    # CALLERS = [
-    #     "debreak-s0-q20",
-    #     "sawfish-s0-q20",
-    #     "sniffles-s0-q20",
-    #     "cutesv-s4-q20",
-    #     "severus-s4-q20",
-    #     "svisionpro-s4-q20",
-    #     "SVDSS-s4-q0",
-    # ]
+    CALLERS = [
+        "debreak-s0-q20",
+        "sawfish-s0-q20",
+        "sniffles-s0-q20",
+        "cutesv-s4-q20",
+        "severus-s4-q20",
+        "svisionpro-s4-q20",
+        "SVDSS-s4-q0",
+    ]
 
     print(
         "Reference",
@@ -134,6 +134,7 @@ def main():
         P, R, F = compute_prf(tp_comp, tp_base, fp, fn)
         print(
             ref,
+            giabv,
             "strat-conf",
             "False",
             caller,
@@ -155,6 +156,7 @@ def main():
         P, R, F = compute_prf(tp_comp, tp_base, fp, fn)
         print(
             ref,
+            giabv,
             "strat-conf",
             "True",
             caller,
