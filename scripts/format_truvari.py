@@ -2,21 +2,33 @@ import sys
 import os
 import glob
 
+from pysam import VariantFile
 
-def parse_summary(fpath):
-    TP, FP, FN = 0, 0, 0
-    for line in open(fpath):
-        line = line.strip('\n \t"')
-        if line.startswith('TP-base"'):
-            if TP == 0:
-                TP = int(line.split(" ")[1][:-1])
-        elif line.startswith('FP"'):
-            if FP == 0:
-                FP = int(line.split(" ")[1][:-1])
-        elif line.startswith('FN"'):
-            if FN == 0:
-                FN = int(line.split(" ")[1][:-1])
-    return TP, FP, FN
+
+def count_vcf(fn):
+    n = 0
+    for record in VariantFile(fn):
+        n += 1
+    return n
+
+
+def parse_vcf(fn):
+    tp, other = 0, 0
+    for record in VariantFile(fn):
+        bd = record.samples[0]["BD"]
+        if bd == "TP":
+            tp += 1
+        else:
+            assert bd in ["FN", "FP"]
+            other += 1
+    return tp, other
+
+
+def compute_prf(tp_comp, tp_base, fp, fn):
+    P = tp_comp / (tp_comp + fp)
+    R = tp_base / (tp_base + fn)
+    F = 2 * P * R / (P + R)
+    return P, R, F
 
 
 def main():
@@ -31,7 +43,8 @@ def main():
         "Caller",
         "Support",
         "MAPQ",
-        "TP",
+        "TP-base",
+        "TP-comp",
         "FP",
         "FN",
         "P",
@@ -40,10 +53,10 @@ def main():
         sep=",",
     )
 
-    for fn in glob.glob(
-        os.path.join(indir, "*", "truvari", "*", "*", "*", "*", "summary.json")
+    for json in glob.glob(
+        os.path.join(indir, "*", "truvari", "*", "*", "*", "summary.json")
     ):
-        fields = fn.split("/")
+        fields = json.split("/")
 
         tool = fields[-2]
         caller, s, q = tool.split("-")
@@ -51,27 +64,105 @@ def main():
         q = q[1:]
         asmc = fields[-3]
         asm = fields[-4]
-        setting = fields[-5]
-        ref = fields[-7]
+        ref = fields[-6]
 
-        for refine in ["norefined", "refined"]:
-            f = fn
-            if refine == "refined":
-                f = "/".join(fields[:-1]) + "/" + "ga4gh_with_refine.summary.json"
-            tp, fp, fn = parse_summary(f)
-            P = round(tp / (tp + fp) * 100, 1) if tp + fp > 0 else 0.0
-            R = round(tp / (tp + fn) * 100, 1) if tp + fn > 0 else 0.0
-            F = round(2 * (P * R) / (P + R) if P + R != 0 else 0.0, 1)
+        base_d = os.path.dirname(json)
+
+        # FULL - bench
+        tp_base = count_vcf(base_d + "/tp-base.vcf.gz")
+        tp_comp = count_vcf(base_d + "/tp-comp.vcf.gz")
+        fp = count_vcf(base_d + "/fp.vcf.gz")
+        fn = count_vcf(base_d + "/fn.vcf.gz")
+        P, R, F = compute_prf(tp_comp, tp_base, fp, fn)
+        print(
+            ref,
+            asm,
+            asmc,
+            "Full",
+            "False",
+            caller,
+            s,
+            q,
+            tp_base,
+            tp_comp,
+            fp,
+            fn,
+            P,
+            R,
+            F,
+            sep=",",
+        )
+
+        # FULL - refine
+        tp_base, fn = parse_vcf(base_d + "/ga4gh_with_refine.base.vcf.gz")
+        tp_comp, fp = parse_vcf(base_d + "/ga4gh_with_refine.comp.vcf.gz")
+        P, R, F = compute_prf(tp_comp, tp_base, fp, fn)
+        print(
+            ref,
+            asm,
+            asmc,
+            "Full",
+            "True",
+            caller,
+            s,
+            q,
+            tp_base,
+            tp_comp,
+            fp,
+            fn,
+            P,
+            R,
+            F,
+            sep=",",
+        )
+
+        for vcf in glob.glob(os.path.join(base_d, "*", "tp-base.vcf.gz")):
+            strat = vcf.split("/")[-2]
+            if strat == "phab_bench":
+                continue
+
+            strat_d = os.path.dirname(vcf)
+
+            # STRAT - bench
+            tp_base = count_vcf(strat_d + "/tp-base.vcf.gz")
+            tp_comp = count_vcf(strat_d + "/tp-comp.vcf.gz")
+            fp = count_vcf(strat_d + "/fp.vcf.gz")
+            fn = count_vcf(strat_d + "/fn.vcf.gz")
+            P, R, F = compute_prf(tp_comp, tp_base, fp, fn)
             print(
                 ref,
                 asm,
                 asmc,
-                setting,
-                refine == "refined",
+                strat,
+                "False",
                 caller,
                 s,
                 q,
-                tp,
+                tp_base,
+                tp_comp,
+                fp,
+                fn,
+                P,
+                R,
+                F,
+                sep=",",
+            )
+
+            # STRAT - refine
+            tp_base, fn = parse_vcf(strat_d + "/ga4gh_with_refine.base.vcf.gz")
+            tp_comp, fp = parse_vcf(strat_d + "/ga4gh_with_refine.comp.vcf.gz")
+            P, R, F = compute_prf(tp_comp, tp_base, fp, fn)
+            print(
+                ref,
+                asm,
+                asmc,
+                strat,
+                "True",
+                caller,
+                s,
+                q,
+                tp_base,
+                tp_comp,
                 fp,
                 fn,
                 P,

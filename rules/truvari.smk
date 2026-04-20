@@ -1,142 +1,67 @@
-# DIPBED = pjoin(WD, "{ref}", "asmcallsets-{a}", "dipcall.bed"),
-# HAPBED = pjoin(WD, "{ref}", "asmcallsets-{a}", "hapdiff", "confident_regions.bed"),
-
 # options: --passonly --pick ac --dup-to-ins
 
 
-rule truvari_full:
+rule truvari:
     input:
         fa=pjoin(WD, "input", "refs", "{ref}.fa"),
         vcf=pjoin(WD, "{ref}", "callsets", "{caller}.vcf.gz"),
         asmcaller=pjoin(WD, "{ref}", "asmcallsets-{a}", "{asmcaller}.vcf.gz"),
     output:
-        d=directory(
-            pjoin(WD, "{ref}", "truvari", "full", "{a}", "{asmcaller}", "{caller}")
+        pjoin(
+            WD, "{ref}", "truvari", "{a}", "{asmcaller}", "{caller}", "tp-base.vcf.gz"
         ),
-        dd=directory(
-            pjoin(
-                WD,
-                "{ref}",
-                "truvari",
-                "full",
-                "{a}",
-                "{asmcaller}",
-                "{caller}",
-                "phab_bench",
-            )
+        pjoin(
+            WD, "{ref}", "truvari", "{a}", "{asmcaller}", "{caller}", "tp-comp.vcf.gz"
         ),
-    threads: workflow.cores / 4
+        pjoin(WD, "{ref}", "truvari", "{a}", "{asmcaller}", "{caller}", "fp.vcf.gz"),
+        pjoin(WD, "{ref}", "truvari", "{a}", "{asmcaller}", "{caller}", "fn.vcf.gz"),
+        pjoin(
+            WD,
+            "{ref}",
+            "truvari",
+            "{a}",
+            "{asmcaller}",
+            "{caller}",
+            "ga4gh_with_refine.base.vcf.gz",
+        ),
+        pjoin(
+            WD,
+            "{ref}",
+            "truvari",
+            "{a}",
+            "{asmcaller}",
+            "{caller}",
+            "ga4gh_with_refine.comp.vcf.gz",
+        ),
+    params:
+        wd=pjoin(
+            WD,
+            "{ref}",
+            "truvari",
+            "{a}",
+            "{asmcaller}",
+            "{caller}",
+        ),
+    threads: workflow.cores / 8
     conda:
         "../envs/truvari.yml"
     shell:
         """
-        # set +e
-        rm -rf {output.d}
-        truvari bench --passonly --pick ac --dup-to-ins --reference {input.fa} --base {input.asmcaller} --comp {input.vcf} --output {output.d}
-        truvari refine --reference {input.fa} --coords R --use-original-vcfs --threads {threads} --align mafft {output.d}
-        # we need this if since this will fail if there are not regions to refine (like in the example data)
-        # wasn't an issue with real data
-        if [ -d {output.dd} ]
-        then
-            truvari ga4gh --input {output.d} --output {output.d}/ga4gh_with_refine
-        else
-            mkdir -p {output.dd}
-            touch {output.d}/NOREGIONSTOREFINE
-            cp {output.d}/summary.json {output.d}/ga4gh_with_refine.summary.json
-        fi
+        truvari bench --passonly --pick ac --dup-to-ins --refine --reference {input.fa} --base {input.asmcaller} --comp {input.vcf} --output {params.wd}
+        truvari ga4gh --input {params.wd} --output {params.wd}/ga4gh_with_refine
         """
 
 
-rule truvari_confident:
-    input:
-        fa=pjoin(WD, "input", "refs", "{ref}.fa"),
-        vcf=pjoin(WD, "{ref}", "callsets", "{caller}.vcf.gz"),
-        asmcaller=pjoin(WD, "{ref}", "asmcallsets-{a}", "{asmcaller}.vcf.gz"),
-        bed=lambda wildcards: (
-            pjoin(WD, "{ref}", "asmcallsets-{a}", "hapdiff", "confident_regions.bed")
-            if wildcards.asmcaller == "hapdiff"
-            else pjoin(WD, "{ref}", "asmcallsets-{a}", "dipcall.bed")
-        ),
-    output:
-        d=directory(
-            pjoin(WD, "{ref}", "truvari", "conf", "{a}", "{asmcaller}", "{caller}")
-        ),
-        dd=directory(
-            pjoin(
-                WD,
-                "{ref}",
-                "truvari",
-                "conf",
-                "{a}",
-                "{asmcaller}",
-                "{caller}",
-                "phab_bench",
-            )
-        ),
-    threads: workflow.cores / 4
-    conda:
-        "../envs/truvari.yml"
-    shell:
-        """
-        # set +e
-        rm -rf {output.d}
-        truvari bench --passonly --pick ac --dup-to-ins --includebed {input.bed} --reference {input.fa} --base {input.asmcaller} --comp {input.vcf} --output {output.d}
-        truvari refine --reference {input.fa} --coords R --use-original-vcfs --threads {threads} --align mafft {output.d}
-        # we need this if since this will fail if there are not regions to refine (like in the example data)
-        # wasn't an issue with real data
-        if [ -d {output.dd} ]
-        then
-            truvari ga4gh --input {output.d} --output {output.d}/ga4gh_with_refine
-        else
-            mkdir -p {output.dd}
-            touch {output.d}/NOREGIONSTOREFINE
-            cp {output.d}/summary.json {output.d}/ga4gh_with_refine.summary.json
-        fi
-        """
-
-
-rule truvari_strat:
-    input:
-        fa=pjoin(WD, "input", "refs", "{ref}.fa"),
-        vcf=pjoin(WD, "{ref}", "callsets", "{caller}.vcf.gz"),
-        asmcaller=pjoin(WD, "{ref}", "asmcallsets-{a}", "{asmcaller}.vcf.gz"),
-        bed=pjoin(WD, "input", "strats", "{strat}", "{ref}.bed"),
-    output:
-        d=directory(
-            pjoin(WD, "{ref}", "truvari", "{strat}", "{a}", "{asmcaller}", "{caller}")
-        ),
-        dd=directory(
-            pjoin(
-                WD,
-                "{ref}",
-                "truvari",
-                "{strat}",
-                "{a}",
-                "{asmcaller}",
-                "{caller}",
-                "phab_bench",
-            )
-        ),
-    threads: workflow.cores / 4
-    conda:
-        "../envs/truvari.yml"
-    shell:
-        """
-        # set +e
-        rm -rf {output.d}
-        truvari bench --passonly --pick ac --dup-to-ins --includebed {input.bed} --reference {input.fa} --base {input.asmcaller} --comp {input.vcf} --output {output.d}
-        truvari refine --reference {input.fa} --coords R --use-original-vcfs --threads {threads} --align mafft {output.d}
-        # we need this if since this will fail if there are not regions to refine (like in the example data)
-        # wasn't an issue with real data
-        if [ -d {output.dd} ]
-        then
-            truvari ga4gh --input {output.d} --output {output.d}/ga4gh_with_refine
-        else
-            mkdir -p {output.dd}
-            touch {output.d}/NOREGIONSTOREFINE
-            cp {output.d}/summary.json {output.d}/ga4gh_with_refine.summary.json
-        fi
-        """
+# # we need this if since this will fail if there are not regions to refine (like in the example data)
+# # wasn't an issue with real data
+# if [ -d {output.dd} ]
+# then
+# truvari ga4gh --input {output.d} --output {output.d}/ga4gh_with_refine
+# else
+# mkdir -p {output.dd}
+# touch {output.d}/NOREGIONSTOREFINE
+# cp {output.d}/summary.json {output.d}/ga4gh_with_refine.summary.json
+# fi
 
 
 rule truvari_giab:
@@ -144,41 +69,252 @@ rule truvari_giab:
         fa=pjoin(WD, "input", "refs", "{ref}.fa"),
         vcf=pjoin(WD, "{ref}", "callsets", "{caller}.vcf.gz"),
         truth=pjoin(WD, "input", "giab{giabv}", "{ref}.vcf.gz"),
-        bed=pjoin(WD, "input", "giab{giabv}", "{ref}.bed"),
     output:
-        d=directory(pjoin(WD, "{ref}", "truvari-giab", "{giabv}", "{opt}", "{caller}")),
-        dd=directory(
-            pjoin(
-                WD,
-                "{ref}",
-                "truvari-giab",
-                "{giabv}",
-                "{opt}",
-                "{caller}",
-                "phab_bench",
-            )
+        pjoin(
+            WD,
+            "{ref}",
+            "truvari-giab",
+            "{giabv}",
+            "{caller}",
+            "ga4gh_with_refine.base.vcf.gz",
+        ),
+        pjoin(
+            WD,
+            "{ref}",
+            "truvari-giab",
+            "{giabv}",
+            "{caller}",
+            "ga4gh_with_refine.comp.vcf.gz",
         ),
     params:
-        bed=lambda wildcards, input: (
-            "--includebed " + input.bed if wildcards.opt == "conf" else ""
+        wd=pjoin(
+            WD,
+            "{ref}",
+            "truvari-giab",
+            "{giabv}",
+            "{caller}",
         ),
     conda:
         "../envs/truvari.yml"
-    threads: workflow.cores / 4
+    threads: workflow.cores / 8
     shell:
         """
-        # set +e
-        rm -rf {output.d}
-        truvari bench --passonly --pick ac --dup-to-ins {params.bed} --reference {input.fa} --base {input.truth} --comp {input.vcf} --output {output.d}
-        truvari refine --reference {input.fa} --coords R --use-original-vcfs --threads {threads} --align mafft {output.d}
-        # we need this if since this will fail if there are not regions to refine (like in the example data)
-        # wasn't an issue with real data
-        if [ -d {output.dd} ]
-        then
-            truvari ga4gh --input {output.d} --output {output.d}/ga4gh_with_refine # --with-refine
-        else
-            mkdir -p {output.dd}
-            touch {output.d}/NOREGIONSTOREFINE
-            cp {output.d}/summary.json {output.d}/ga4gh_with_refine.summary.json
-        fi
+        truvari bench --passonly --pick ac --dup-to-ins --refine --reference {input.fa} --base {input.asmcaller} --comp {input.vcf} --output {params.wd}
+        truvari ga4gh --input {params.wd} --output {params.wd}/ga4gh_with_refine
+        """
+
+
+rule stratify_giab:
+    input:
+        tp_base=pjoin(
+            WD, "{ref}", "truvari-giab", "{giabv}", "{caller}", "tp-base.vcf.gz"
+        ),
+        tp_comp=pjoin(
+            WD, "{ref}", "truvari-giab", "{giabv}", "{caller}", "tp-comp.vcf.gz"
+        ),
+        fp=pjoin(WD, "{ref}", "truvari-giab", "{giabv}", "{caller}", "fp.vcf.gz"),
+        fn=pjoin(WD, "{ref}", "truvari-giab", "{giabv}", "{caller}", "fn.vcf.gz"),
+        base=pjoin(
+            WD,
+            "{ref}",
+            "truvari-giab",
+            "{giabv}",
+            "{caller}",
+            "ga4gh_with_refine.base.vcf.gz",
+        ),
+        comp=pjoin(
+            WD,
+            "{ref}",
+            "truvari-giab",
+            "{giabv}",
+            "{caller}",
+            "ga4gh_with_refine.comp.vcf.gz",
+        ),
+        bed=pjoin(WD, "input", "giab{giabv}", "{ref}.bed"),
+    output:
+        tp_base=pjoin(
+            WD,
+            "{ref}",
+            "truvari-giab",
+            "{giabv}",
+            "{caller}",
+            "strat-conf",
+            "tp-base.vcf.gz",
+        ),
+        tp_comp=pjoin(
+            WD,
+            "{ref}",
+            "truvari-giab",
+            "{giabv}",
+            "{caller}",
+            "strat-conf",
+            "tp-comp.vcf.gz",
+        ),
+        fp=pjoin(
+            WD,
+            "{ref}",
+            "truvari-giab",
+            "{giabv}",
+            "{caller}",
+            "strat-conf",
+            "fp.vcf.gz",
+        ),
+        fn=pjoin(
+            WD,
+            "{ref}",
+            "truvari-giab",
+            "{giabv}",
+            "{caller}",
+            "strat-conf",
+            "fn.vcf.gz",
+        ),
+        base=pjoin(
+            WD,
+            "{ref}",
+            "truvari-giab",
+            "{giabv}",
+            "{caller}",
+            "strat-conf",
+            "ga4gh_with_refine.base.vcf.gz",
+        ),
+        comp=pjoin(
+            WD,
+            "{ref}",
+            "truvari-giab",
+            "{giabv}",
+            "{caller}",
+            "strat-conf",
+            "ga4gh_with_refine.comp.vcf.gz",
+        ),
+    conda:
+        "./envs/bedtools.yml"
+    shell:
+        """
+        bedtools intersect -header -a {input.tp_base} -b {input.bed} -u | bgzip -c > {output.tp_base}
+        tabix -p vcf {output.tp_base}
+        bedtools intersect -header -a {input.tp_comp} -b {input.bed} -u | bgzip -c > {output.tp_comp}
+        tabix -p vcf {output.tp_comp}
+        bedtools intersect -header -a {input.fp} -b {input.bed} -u | bgzip -c > {output.fp}
+        tabix -p vcf {output.fp}
+        bedtools intersect -header -a {input.fn} -b {input.bed} -u | bgzip -c > {output.fn}
+        tabix -p vcf {output.fn}
+        #
+        bedtools intersect -header -a {input.base} -b {input.bed} -u | bgzip -c > {output.base}
+        tabix -p vcf {output.base}
+        bedtools intersect -header -a {input.comp} -b {input.bed} -u | bgzip -c > {output.comp}
+        tabix -p vcf {output.comp}
+        """
+
+
+rule stratify:
+    input:
+        tp_base=pjoin(
+            WD, "{ref}", "truvari", "{a}", "{asmcaller}", "{caller}", "tp-base.vcf.gz"
+        ),
+        tp_comp=pjoin(
+            WD, "{ref}", "truvari", "{a}", "{asmcaller}", "{caller}", "tp-comp.vcf.gz"
+        ),
+        fp=pjoin(WD, "{ref}", "truvari", "{a}", "{asmcaller}", "{caller}", "fp.vcf.gz"),
+        fn=pjoin(WD, "{ref}", "truvari", "{a}", "{asmcaller}", "{caller}", "fn.vcf.gz"),
+        base=pjoin(
+            WD,
+            "{ref}",
+            "truvari",
+            "{a}",
+            "{asmcaller}",
+            "{caller}",
+            "ga4gh_with_refine.base.vcf.gz",
+        ),
+        comp=pjoin(
+            WD,
+            "{ref}",
+            "truvari",
+            "{a}",
+            "{asmcaller}",
+            "{caller}",
+            "ga4gh_with_refine.comp.vcf.gz",
+        ),
+        bed=lambda wildcards: (
+            pjoin(WD, "{ref}", "asmcallsets-{a}", "{asmcaller}.bed")
+            if wildcards.strat == "conf"
+            else pjoin(WD, "input", "strats", "{strat}", "{ref}.bed")
+        ),
+    output:
+        tp_base=pjoin(
+            WD,
+            "{ref}",
+            "truvari",
+            "{a}",
+            "{asmcaller}",
+            "{caller}",
+            "strat-{strat}",
+            "tp-base.vcf.gz",
+        ),
+        tp_comp=pjoin(
+            WD,
+            "{ref}",
+            "truvari",
+            "{a}",
+            "{asmcaller}",
+            "{caller}",
+            "strat-{strat}",
+            "tp-comp.vcf.gz",
+        ),
+        fp=pjoin(
+            WD,
+            "{ref}",
+            "truvari",
+            "{a}",
+            "{asmcaller}",
+            "{caller}",
+            "strat-{strat}",
+            "fp.vcf.gz",
+        ),
+        fn=pjoin(
+            WD,
+            "{ref}",
+            "truvari",
+            "{a}",
+            "{asmcaller}",
+            "{caller}",
+            "strat-{strat}",
+            "fn.vcf.gz",
+        ),
+        base=pjoin(
+            WD,
+            "{ref}",
+            "truvari",
+            "{a}",
+            "{asmcaller}",
+            "{caller}",
+            "strat-{strat}",
+            "ga4gh_with_refine.base.vcf.gz",
+        ),
+        comp=pjoin(
+            WD,
+            "{ref}",
+            "truvari",
+            "{a}",
+            "{asmcaller}",
+            "{caller}",
+            "strat-{strat}",
+            "ga4gh_with_refine.comp.vcf.gz",
+        ),
+    conda:
+        "./envs/bedtools.yml"
+    shell:
+        """
+        bedtools intersect -header -a {input.tp_base} -b {input.bed} -u | bgzip -c > {output.tp_base}
+        tabix -p vcf {output.tp_base}
+        bedtools intersect -header -a {input.tp_comp} -b {input.bed} -u | bgzip -c > {output.tp_comp}
+        tabix -p vcf {output.tp_comp}
+        bedtools intersect -header -a {input.fp} -b {input.bed} -u | bgzip -c > {output.fp}
+        tabix -p vcf {output.fp}
+        bedtools intersect -header -a {input.fn} -b {input.bed} -u | bgzip -c > {output.fn}
+        tabix -p vcf {output.fn}
+        #
+        bedtools intersect -header -a {input.base} -b {input.bed} -u | bgzip -c > {output.base}
+        tabix -p vcf {output.base}
+        bedtools intersect -header -a {input.comp} -b {input.bed} -u | bgzip -c > {output.comp}
+        tabix -p vcf {output.comp}
         """

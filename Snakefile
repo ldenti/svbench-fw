@@ -22,6 +22,10 @@ def lns(src, dst):
 
 
 WD = config["wd"]
+IS_MALE = False
+
+# just symlink everything
+# XXX: this was a bad choice honestly.. we might have used few dictionaries and access with wildcards
 
 os.makedirs(WD, exist_ok=True)
 os.makedirs(pjoin(WD, "input"), exist_ok=True)
@@ -55,6 +59,12 @@ for strat, fns in config["strat"].items():
     for ref, fn in fns.items():
         lns(fn, pjoin(WD, "input", "strats", strat, f"{ref}.bed"))
 
+# PARs = config["par"]
+if "par" in config:
+    IS_MALE = True
+    os.makedirs(pjoin(WD, "input", "pars"), exist_ok=True)
+    for ref, fn in config["par"].items():
+        lns(fn, pjoin(WD, "input", "pars", f"{ref}.bed"))
 
 if "giab06" in config:
     for t, fns in config["giab06"].items():
@@ -98,6 +108,7 @@ for caller, opts in config["callers"].items():
             CALLERS.append(f"{caller}-s{s}-q{q}")
 print("===", len(CALLERS), "READ-BASED CALLERS:", ", ".join(CALLERS))
 
+
 """
 A note on callers: I tried to use output VCFs as they are. But sometimes,
 truvari was complaining about BND records, so I decided to remove them.
@@ -109,8 +120,9 @@ wildcard_constraints:
     a="|".join([f"({x})" for x in asms]),
     s=r"\d+",
     q=r"\d+",
-    strat="|".join([f"({x})" for x in strats]),
+    strat="|".join([f"({x})" for x in strats]) + "|conf",
     asmcaller="|".join([f"({c})" for c in ASMC]),
+    caller="|".join([f"({c})" for c in CALLERS]),
 
 
 # callers from assembly
@@ -133,29 +145,14 @@ include: "rules/truvari.smk"
 
 rule all:
     input:
-        # from callers-asm.smk
+        # === Assembly-based callers
         expand(
             pjoin(WD, "{ref}", "asmcallsets-{a}", "{asmc}.vcf.gz"),
             ref=references,
             a=asms,
             asmc=ASMC,
         ),
-        expand(
-            pjoin(WD, "{ref}", "asmcallsets-{a}.confident", "{asmc}.vcf.gz"),
-            ref=references,
-            a=asms,
-            asmc=ASMC,
-        ),
-        # from various callers .smk
-        expand(
-            pjoin(WD, "{ref}", "callsets", "{caller}.vcf.gz"),
-            ref=references,
-            caller=CALLERS,
-        ),
-        #
-        pjoin(WD, "truvari.csv"),
-        pjoin(WD, "truvari-giab.csv"),
-        #
+        # === Analyses on assembly-based callers (all-vs-all + realignment)
         expand(
             pjoin(
                 WD,
@@ -183,10 +180,19 @@ rule all:
             asmc=ASMC,
             w=[500],
         ),
+        # === Read-based callers
+        expand(
+            pjoin(WD, "{ref}", "callsets", "{caller}.vcf.gz"),
+            ref=references,
+            caller=CALLERS,
+        ),
+        # === Benchmark read-based callers against assembly-based
+        pjoin(WD, "truvari.csv"),
+        pjoin(WD, "truvari-giab.csv"),
 
 
 # === Assembly-based callers
-rule asmcallers:
+rule asm_callers:
     input:
         expand(
             pjoin(WD, "{ref}", "asmcallsets-{a}", "{asmc}.vcf.gz"),
@@ -238,39 +244,30 @@ rule callers:
         ),
 
 
-rule asm_benchmarking_nostrats:
-    input:
-        # from truvari.smk
-        expand(
-            pjoin(WD, "{ref}", "truvari", "{x}", "{a}", "{asmc}", "{caller}"),
-            ref=references,
-            x=["full", "conf"],
-            a=asms,
-            asmc=ASMC,
-            caller=CALLERS,
-        ),
-    output:
-        pjoin(WD, "truvari.csv"),
-    shell:
-        """
-        python3 ./scripts/format_truvari.py {WD} > {output}
-        """
-
-
 # === Benchmark read-based callers against assembly-based
 rule asm_benchmarking:
     input:
-        # from truvari.smk
         expand(
-            pjoin(WD, "{ref}", "truvari", "{x}", "{a}", "{asmc}", "{caller}"),
+            pjoin(
+                WD,
+                "{ref}",
+                "truvari",
+                "{a}",
+                "{asmc}",
+                "{caller}",
+                "strat-{strat}",
+                "tp-base.vcf.gz",
+            ),
             ref=references,
-            x=["full", "conf"] + strats,
             a=asms,
             asmc=ASMC,
             caller=CALLERS,
+            strat=["conf"] + strats,
         ),
     output:
         pjoin(WD, "truvari.csv"),
+    conda:
+        "./envs/seaborn.yml"
     shell:
         """
         python3 ./scripts/format_truvari.py {WD} > {output}
@@ -280,20 +277,36 @@ rule asm_benchmarking:
 # === Benchmark read-based callers against giab/curated ground truths
 rule giab_benchmarking:
     input:
-        # from truvari.smk
         expand(
-            pjoin(WD, "{ref}", "truvari-giab", "50", "{opt}", "{caller}"),
+            pjoin(
+                WD,
+                "{ref}",
+                "truvari-giab",
+                "50",
+                "{caller}",
+                "strat-conf",
+                "tp-base.vcf.gz",
+            ),
             ref=references,
-            opt=["full", "conf"],
             caller=CALLERS,
         ),
         expand(
-            pjoin(WD, "hg19", "truvari-giab", "06", "{opt}", "{caller}"),
-            opt=["full", "conf"],
+            pjoin(
+                WD,
+                "hg19",
+                "truvari-giab",
+                "06",
+                "{caller}",
+                "strat-conf",
+                "tp-base.vcf.gz",
+            ),
+            ref=references,
             caller=CALLERS,
         ),
     output:
         pjoin(WD, "truvari-giab.csv"),
+    conda:
+        "./envs/seaborn.yml"
     shell:
         """
         python3 ./scripts/format_truvari_giab.py {WD} > {output}

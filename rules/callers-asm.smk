@@ -26,15 +26,16 @@ rule dipcall:
         bam1=pjoin(WD, "{ref}", "asmcallsets-{a}", "dipcall", "prefix.hap1.bam"),
         bam2=pjoin(WD, "{ref}", "asmcallsets-{a}", "dipcall", "prefix.hap2.bam"),
     params:
+        par=" -x " + pjoin(WD, "input", "pars", "{ref}.bed") if IS_MALE else "",
         wdir=pjoin(WD, "{ref}", "asmcallsets-{a}", "dipcall"),
         prefix=pjoin(WD, "{ref}", "asmcallsets-{a}", "dipcall", "prefix"),
         mak=pjoin(WD, "{ref}", "asmcallsets-{a}", "dipcall.mak"),
-    threads: workflow.cores
+    threads: workflow.cores / 2
     conda:
         "../envs/dipcall.yml"
     shell:
         """
-        run-dipcall -t {threads} {params.prefix} {input.fa} {input.hap1} {input.hap2} > {params.mak}
+        run-dipcall {params.par} -t {threads} {params.prefix} {input.fa} {input.hap1} {input.hap2} > {params.mak}
         mkdir -p {params.wdir}
         make -j 2 -f {params.mak}
         tabix -p vcf {output.vcf}
@@ -71,8 +72,10 @@ rule svim_asm:
         fa=pjoin(WD, "input", "refs", "{ref}.fa"),
         bam1=rules.dipcall.output.bam1,
         bam2=rules.dipcall.output.bam2,
+        bed=pjoin(WD, "{ref}", "asmcallsets-{a}", "dipcall.bed"),
     output:
         vcf=pjoin(WD, "{ref}", "asmcallsets-{a}", "svim-asm", "variants.vcf"),
+        bed=pjoin(WD, "{ref}", "asmcallsets-{a}", "svim-asm.bed"),
     params:
         wd=pjoin(WD, "{ref}", "asmcallsets-{a}", "svim-asm"),
     conda:
@@ -81,6 +84,7 @@ rule svim_asm:
         """
         mkdir -p {params.wd}
         svim-asm diploid --min_sv_size {min_l} {params.wd} {input.bam1} {input.bam2} {input.fa}
+        cp {input.bed} {output.bed}
         """
 
 
@@ -135,7 +139,7 @@ rule hapdiff:
     shell:
         """
         {input.exe} --reference {input.fa} --pat {input.hap1} --mat {input.hap2} --out-dir {params.outd} -t {threads}
-        cp {input.bed} {input.bed2}
+        cp {output.bed} {output.bed2}
         """
 
 

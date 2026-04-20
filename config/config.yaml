@@ -8,6 +8,10 @@ trf:
   hg19: /projects6/human_hs37d5.trf.bed
   hg38: /projects6/human_GRCh38_no_alt_analysis_set.trf.bed
   chm13: /projects6/human_chm13v2.0_maskedY_rCRS.trf.bed
+par:
+  hg19: /projects6/hs37d5.PAR.bed
+  hg38: /projects6/hs38.PAR.bed
+  chm13: /projects6/chm13v2.0_PAR.bed
 strat:
   hard:
     chm13: /projects6/svbench-natcomm/hg002/giab-strat/CHM13@all/Union/CHM13_alldifficultregions.bed

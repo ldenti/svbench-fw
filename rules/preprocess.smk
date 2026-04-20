@@ -38,8 +38,8 @@ rule deepvariant:
         # XXX: ugly workaround, this might not work everytime
         bind="/" + WD.split("/")[1],
     threads: workflow.cores
-    conda:
-        "../envs/deepvariant.yml"
+    #conda:
+    #    "../envs/deepvariant.yml"
     shell:
         """
         singularity run --bind {params.bind}:{params.bind} docker://google/deepvariant:1.9.0 /opt/deepvariant/bin/run_deepvariant --model_type PACBIO --ref {input.fa} --reads {input.bam} --output_vcf {output.vcf} --num_shards {threads} --sample_name {SAMPLE_NAME}
