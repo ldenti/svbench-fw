@@ -6,7 +6,7 @@ set -xe
 
 WD=$1
 
-SAMPLE=NA12878 #HG002
+SAMPLE=NA12878 # HG002
 
 for ref in chm13 hg38 hg19
 do
@@ -25,6 +25,6 @@ do
     # for asm in giab hprc # this for HG002
     for asm in pp # this for NA12878
     do
-	Rscript karyo.R $WD/$ref/asmcallsets-$asm/dipcall.bed $WD/$ref/asmcallsets-$asm/hapdiff.bed $ref $title $SAMPLE-$asm.$ref.pdf
+	Rscript $SD/karyo.R $WD/$ref/asmcallsets-$asm/dipcall.bed $WD/$ref/asmcallsets-$asm/hapdiff.bed $ref $title $SAMPLE-$asm.$ref.pdf
     done
 done
