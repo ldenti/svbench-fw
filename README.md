@@ -82,4 +82,4 @@ ls ./svbench-example/SMK_OUT/*.csv
 *Note 2:* recall of all tools will be low since reads cover a small region of the chromosome whereas truthsets and contigs cover the entire chromosome.
 
 ### Experiments
-Information on the data used in our experiments can be found [here](data/README.md). Please, edit the `config/config.yaml accordingly and then run the Snakemake pipeline (two times, one per individual, i.e., HG002 and NA12878). Finally, to replicate the results/plots presented in the manuscript, follow the [instructions](analyses/README.md) in the `analyses` folder.
+Information on the data used in our experiments can be found [here](data/README.md). Please, edit the `config/config.yaml` accordingly and then run the Snakemake pipeline (two times, one per individual, i.e., HG002 and NA12878). Finally, to replicate the results/plots presented in the manuscript, follow the [instructions](analyses/README.md) in the `analyses` folder.
