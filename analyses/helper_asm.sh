@@ -56,17 +56,13 @@ NA=$2
 
 for asm in giab hprc
 do
-    python3 $SD/plot_comparison_asm.py $HG                      --asm $asm -o heatmap.hg002-${asm}.full-noref.pdf
-    python3 $SD/plot_comparison_asm.py $HG             --refine --asm $asm -o heatmap.hg002-${asm}.full-ref.pdf
-    python3 $SD/plot_comparison_asm.py $HG --confident          --asm $asm -o heatmap.hg002-${asm}.conf-noref.pdf
-    python3 $SD/plot_comparison_asm.py $HG --confident --refine --asm $asm -o heatmap.hg002-${asm}.conf-ref.pdf
+    python3 $SD/plot_comparison_asm.py $HG          --asm $asm -o heatmap.hg002-${asm}.noref.pdf
+    python3 $SD/plot_comparison_asm.py $HG --refine --asm $asm -o heatmap.hg002-${asm}.ref.pdf
 done
 
 asm=pp
-python3 $SD/plot_comparison_asm.py $NA                      --asm $asm -o heatmap.na12878-${asm}.full-noref.pdf
-python3 $SD/plot_comparison_asm.py $NA             --refine --asm $asm -o heatmap.na12878-${asm}.full-ref.pdf
-python3 $SD/plot_comparison_asm.py $NA --confident          --asm $asm -o heatmap.na12878-${asm}.conf-noref.pdf
-python3 $SD/plot_comparison_asm.py $NA --confident --refine --asm $asm -o heatmap.na12878-${asm}.conf-ref.pdf
+python3 $SD/plot_comparison_asm.py $NA          --asm $asm -o heatmap.na12878-${asm}.noref.pdf
+python3 $SD/plot_comparison_asm.py $NA --refine --asm $asm -o heatmap.na12878-${asm}.ref.pdf
 
 ######################################################################
 
