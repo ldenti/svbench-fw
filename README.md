@@ -20,7 +20,7 @@ snakemake -c 16 --use-conda --configfile config/config.yaml -p [-n]
 WD=$(grep "wd:" ./config/config.yaml | cut -f2 -d" ")
 ls $WD/*.csv
 ```
-### Use case
+#### Use case
 `svbench-fw` can be used for:
 * compare assembly-based SV callers
 * evaluate long-read-based SV callers against assembly-based callsets
@@ -29,30 +29,7 @@ ls $WD/*.csv
 
 The framework can be easily extended with new callers by adding new rules to the Snakemake workflow and including it in the `config.yaml` file.
 
-### Example
-To test `svbench-fw`, we provide example data (zenodo) and the following instructions:
-```
-git clone https://github.com/ldenti/svbench-fw.git
-cd svbench-fw
-
-# mamba create -c bioconda -c conda-forge -n svbench snakemake-minimal
-conda activate svbench
-
-mkdir svbench-example
-cd svbench-example
-wget https://zenodo.org/records/17608271/files/svbench-fw.exampledata.tar.gz
-tar xvfz svbench-fw.exampledata.tar.gz
-bash write_config.sh > config.yml
-cd ..
-snakemake -c 4 --use-conda --configfile ./svbench-example/config.yml -p [-n]
-ls ./svbench-example/SMK_OUT/*.csv
-```
-
-*Note 1:* this should take ~half an hour (using 4 threads)
-
-*Note 2:* recall of all tools will be low since reads cover a small region of the chromosome whereas truthsets and contigs cover the entire chromosome.
-
-### Supported tools
+#### Supported tools
 All these tools are automatically installed by Snakemake (via conda or by pulling from corresponding github repository).
 
 Read alignment:
@@ -81,5 +58,28 @@ SV calling from diploid assemblies:
 Benchmarkers:
 * truvari (v5.4.0)
 
+### Example
+To test `svbench-fw`, we provide example data (zenodo) and the following instructions:
+```
+git clone https://github.com/ldenti/svbench-fw.git
+cd svbench-fw
+
+# mamba create -c bioconda -c conda-forge -n svbench snakemake-minimal
+conda activate svbench
+
+mkdir svbench-example
+cd svbench-example
+wget https://zenodo.org/records/17608271/files/svbench-fw.exampledata.tar.gz
+tar xvfz svbench-fw.exampledata.tar.gz
+bash write_config.sh > config.yml
+cd ..
+snakemake -c 4 --use-conda --configfile ./svbench-example/config.yml -p [-n]
+ls ./svbench-example/SMK_OUT/*.csv
+```
+
+*Note 1:* this should take ~half an hour (using 4 threads)
+
+*Note 2:* recall of all tools will be low since reads cover a small region of the chromosome whereas truthsets and contigs cover the entire chromosome.
+
 ### Experiments
-To replicate the experiments presented in the manuscript, follow the [instructions](analyses/README.md) in the `analyses` folder. Information on the data used, can be found [here](data/README.md).
+Information on the data used in our experiments can be found [here](data/README.md). Please, edit the `config/config.yaml accordingly and then run the Snakemake pipeline (two times, one per individual, i.e., HG002 and NA12878). Finally, to replicate the results/plots presented in the manuscript, follow the [instructions](analyses/README.md) in the `analyses` folder.
