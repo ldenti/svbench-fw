@@ -66,6 +66,8 @@ asm-callers:
   - svim-asm
   - hapdiff
 #
+# s is the minimum support for a call
+# q is the minimum mapping quality
 callers:
   debreak:
     s:

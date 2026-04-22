@@ -2,7 +2,7 @@
 
 This folder contains all the scripts needed to reproduce the results presented in the manuscript. We assume you have run the workflow as described in the paper: individual HG002 with assemblies from giab and hprc and NA12878 with assemblies from platinum pedigree (pp).
 
-All scripts/commands assume several tools and library to be installed (e.g., `truvari`, `seaborn`, `bedtools`...). Please refer also to `helper-asm.sh`, `helper-karyo.sh`, and `helper-longreads.sh` scripts.
+All scripts/commands assume several tools and library to be installed (e.g., `truvari`, `seaborn`, `bedtools`, `R`...). Please refer also to `helper-asm.sh`, `helper-karyo.sh`, and `helper-longreads.sh` scripts.
 
 All scripts can be run on the Snakemake working directory of both individuals (i.e., `$WD`), if not differently stated (e.g., `$HG002_WD`).
 

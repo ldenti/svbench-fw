@@ -65,24 +65,17 @@ samtools fastq NA12878.CHM13.haplotagged.bam | gzip -c > NA12878.CHM13.haplotagg
 
 ### GIAB curated SV callsets
 ```
-# Get GIAB v0.6
+# GIAB v0.6
 wget https://ftp-trace.ncbi.nlm.nih.gov/ReferenceSamples/giab/data/AshkenazimTrio/analysis/NIST_SVs_Integration_v0.6/HG002_SVs_Tier1_v0.6.{vcf.gz,vcf.gz.tbi,bed}
 
-# Get GIAB v5.0
+# GIAB v5.0q
 wget https://ftp-trace.ncbi.nlm.nih.gov/ReferenceSamples/giab/release/AshkenazimTrio/HG002_NA24385_son/v5.0q/HG002_{GRCh37,GRCh38,CHM13v2.0}_v5.0q_stvar.vcf.gz{.tbi}
 wget https://ftp-trace.ncbi.nlm.nih.gov/ReferenceSamples/giab/release/AshkenazimTrio/HG002_NA24385_son/v5.0q/HG002_{GRCh37,GRCh38,CHM13v2.0}_v5.0q_stvar.benchmark.bed
 
-# get SVs
-bcftools view -Oz -v indels -i '(ILEN <= -30 || ILEN >= 30)' HG002_CHM13v2.0_v5.0q_stvar.vcf.gz > chm13-giab5.sv.vcf.gz
+bcftools view -Oz -i '(ILEN <= -50 || ILEN >= 50)' HG002_CHM13v2.0_v5.0q_stvar.vcf.gz > chm13-giab5.sv.vcf.gz
 tabix -p vcf chm13-giab5.sv.vcf.gz
-bcftools view -Oz -v indels -i '(ILEN <= -30 || ILEN >= 30)' HG002_GRCh38_v5.0q_stvar.vcf.gz > hg38-giab5.sv.vcf.gz
+bcftools view -Oz -i '(ILEN <= -50 || ILEN >= 50)' HG002_GRCh38_v5.0q_stvar.vcf.gz > hg38-giab5.sv.vcf.gz
 tabix -p vcf hg38-giab5.sv.vcf.gz
-bcftools view -Oz -v indels -i '(ILEN <= -30 || ILEN >= 30)' HG002_GRCh37_v5.0q_stvar.vcf.gz > hg19-giab5.sv.vcf.gz
+bcftools view -Oz -i '(ILEN <= -50 || ILEN >= 50)' HG002_GRCh37_v5.0q_stvar.vcf.gz > hg19-giab5.sv.vcf.gz
 tabix -p vcf hg19-giab5.sv.vcf.gz
 ```
-
-<!-- Original VCFs are provided by Severus people ([variant_calls_and_benchmarks.tar.gz](https://zenodo.org/records/14541057)). To run truvari bench, we had to remove BND from some callsets (sniffles2, cuteSV, and severus):
-```
-bcftools view -Oz --exclude "INFO/SVTYPE='BND'" input.vcf.gz > output.vcf.gz
-tabix -p vcf output.vcf.gz
-``` -->

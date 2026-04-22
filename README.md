@@ -1,25 +1,33 @@
 # SVBench-FW
 
-Modular and extensible framework to evaluate SV callers (from long reads) against SV truthsets created from diploid genomes.
+Modular and extensible framework to evaluate SV callers (from long reads) against SV truthsets created from diploid genomes. The goal of this repository is to simplify SV calling performance evaluation while enabling a fair and standardised evaluation.
 
-The goal of this repository is to simplify SV calling performance evaluation while enabling a fair and standardised evaluation.
-
-This framework is provided as a Snakemake pipeline. Additional python scripts can be used to summarize and plot the results.
+This framework is provided as a Snakemake pipeline. Additional python scripts can be used to summarize and plot the results (please refer to [analyses](analyses/README.md)).
 
 ### Prerequisites and usage
+The prerequisites to run `svbench-fw` are:
 * conda/mamba
 * snakemake
-* seaborn (for optional plots)
+
+![](imgs/flowchart.png)
 
 ``` sh
 mamba create -c bioconda -c conda-forge -n svbench snakemake-minimal seaborn
 conda activate svbench
 # edit config/config.yml
-snakemake -c 16 --use-conda --configfile config/config.yml -p [-n]
+snakemake -c 16 --use-conda --configfile config/config.yaml -p [-n]
 
-WD=$(grep "wd:" ./config/config.yml | cut -f2 -d" ")
+WD=$(grep "wd:" ./config/config.yaml | cut -f2 -d" ")
 ls $WD/*.csv
 ```
+### Use case
+`svbench-fw` can be used for:
+* compare assembly-based SV callers
+* evaluate long-read-based SV callers against assembly-based callsets
+* evaluate long-read-based SV callers against curated callsets (e.g., GIAB v5.0q)
+* analyze the results, as described and presented in the manuscript
+
+The framework can be easily extended with new callers by adding new rules to the Snakemake workflow and including it in the `config.yaml` file.
 
 ### Example
 To test `svbench-fw`, we provide example data (zenodo) and the following instructions:
@@ -45,33 +53,33 @@ ls ./svbench-example/SMK_OUT/*.csv
 *Note 2:* recall of all tools will be low since reads cover a small region of the chromosome whereas truthsets and contigs cover the entire chromosome.
 
 ### Supported tools
+All these tools are automatically installed by Snakemake (via conda or by pulling from corresponding github repository).
+
 Read alignment:
-* minimap2 (v2.28)
+* minimap2 (v2.30)
 
 Small variants caller:
-* deepvariant (v1.8.0)
+* deepvariant (v1.9.0)
 
 Small variants phasing:
-* whatshap (v2.5)
+* whatshap (v2.8)
 
 SV calling from long reads:
-* SVDSS (v1.0.5, v2.1.0)
-* sniffles (v2.3)
-* cuteSV (v2.1.2)
+* SVDSS (v1.0.5)
+* sniffles (v2.7.2)
+* cuteSV (v2.1.3)
 * debreak (v1.3)
-* SVision-pro (v2.4)
+* SVision-pro (v2.5)
 * Severus (v1.4.0)
-* sawfish (v2.0.0)
+* sawfish (v2.2.1)
 
 SV calling from diploid assemblies:
 * dipcall (v0.3)
 * svim-asm (v1.0.3)
-* hapdiff (commit e0abbb9a8095c70a0de23c49408a530901361b12)
+* hapdiff (commit e0abbb9)
 
 Benchmarkers:
-* truvari (v5.2.0)
-* minda (commit 47d0fb5484b2b15865a94a9ba81436beaf52cf16)
-  * no analysis on minda results
+* truvari (v5.4.0)
 
 ### Experiments
-To replicate the experiments presented in the manuscript, follow the [instructions](https://github.com/ldenti/svbench/blob/main/plots/README.md) in the `plots` folder.
+To replicate the experiments presented in the manuscript, follow the [instructions](analyses/README.md) in the `analyses` folder. Information on the data used, can be found [here](data/README.md).
