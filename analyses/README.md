@@ -37,6 +37,10 @@ python3 ./plot_giabstrat.py -a giab --refine $HG002_WD/truvari.csv
 
 # Parameters evalutions
 python3 ./evaluate_parameters.py -a giab $HG002_WD/truvari.csv
+
+# Singleton/multi stratification
+python3 ./check_proximity.py csv $HG002_WD > proximity-refined.csv
+python3 ./check_proximity.py pr proximity-refined.csv proximity-refined.pdf
 ```
 
 #### Evaluation against GIAB (v5.0q and v0.6)
