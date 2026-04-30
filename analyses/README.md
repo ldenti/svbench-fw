@@ -16,6 +16,9 @@ python3 ./plot_comparison_asm.py $WD --asm giab [--confident] [--refine]
 
 # Karyoplots
 Rscript ./karyo.R $WD/chm13/asmcallsets-giab/dipcall.bed $WD/chm13/asmcallsets-giab/hapdiff.bed chm13 CHM13-giab karyo.pdf
+
+# Chromosome with colored variants
+python3 ./plot_chromosomes.py $HG002_WD/chm13/asmcallsets-giab/ chr3:143462850-143463100
 ```
 
 #### Read-based vs assembly-based
