@@ -4,9 +4,10 @@ SD=$(dirname $0)
 
 set -xe
 
-WD=$1
+WD=$1 # SNAKEMAKE DIRECTORY
 
 SAMPLE=NA12878 # HG002
+ASM=(pp) # (giab hprc)
 
 for ref in chm13 hg38 hg19
 do
@@ -22,8 +23,7 @@ do
 	title="GRCh37"
     fi
 
-    # for asm in giab hprc # this for HG002
-    for asm in pp # this for NA12878
+    for asm in "${ASM[@]}"
     do
 	Rscript $SD/karyo.R $WD/$ref/asmcallsets-$asm/dipcall.bed $WD/$ref/asmcallsets-$asm/hapdiff.bed $ref $title $SAMPLE-$asm.$ref.pdf
     done

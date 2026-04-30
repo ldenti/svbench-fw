@@ -4,52 +4,52 @@ SD=$(dirname $0)
 
 set -xe
 
-HG=$1
-NA=$2
+HG=$1 # SNAKEMAKE DIRECTORY FOR HG002
+NA=$2 # SNAKEMAKE DIRECTORY FOR NA12878
 
-# # ASM-BASED BIG FIGURE
-# #######################
+# ASM-BASED BIG FIGURE
+#######################
 
-# for asm in giab hprc
-# do
-#     python3 $SD/plot_asm.py $HG --asm $asm             -o hg002-$asm.full.pdf
-#     python3 $SD/plot_asm.py $HG --asm $asm --confident -o hg002-$asm.conf.pdf
-# done
+for asm in giab hprc
+do
+    python3 $SD/plot_asm.py $HG --asm $asm             -o hg002-$asm.full.pdf
+    python3 $SD/plot_asm.py $HG --asm $asm --confident -o hg002-$asm.conf.pdf
+done
 
-# asm=pp
-# python3 $SD/analyses/plot_asm.py $NA --asm $asm             -o na12878-$asm.full.pdf
-# python3 $SD/plot_asm.py $NA --asm $asm --confident -o na12878-$asm.conf.pdf
+asm=pp
+python3 $SD/analyses/plot_asm.py $NA --asm $asm             -o na12878-$asm.full.pdf
+python3 $SD/plot_asm.py $NA --asm $asm --confident -o na12878-$asm.conf.pdf
 
 
-# # ASM-BASED STRATIFICATION
-# ###########################
+# ASM-BASED STRATIFICATION
+###########################
 
-# for asm in giab hprc
-# do
-#     python3 $SD/plot_asm_strats.py $HG --asm $asm             -o strats.hg002-$asm-full.pdf
-#     python3 $SD/plot_asm_strats.py $HG --asm $asm --confident -o strats.hg002-$asm-conf.pdf
-# done
+for asm in giab hprc
+do
+    python3 $SD/plot_asm_strats.py $HG --asm $asm             -o strats.hg002-$asm-full.pdf
+    python3 $SD/plot_asm_strats.py $HG --asm $asm --confident -o strats.hg002-$asm-conf.pdf
+done
 
-# asm=pp
-# python3 $SD/plot_asm_strats.py $NA --asm $asm             -o strats.na12878-$asm-full.pdf
-# python3 $SD/plot_asm_strats.py $NA --asm $asm --confident -o strats.na12878-$asm-conf.pdf
+asm=pp
+python3 $SD/plot_asm_strats.py $NA --asm $asm             -o strats.na12878-$asm-full.pdf
+python3 $SD/plot_asm_strats.py $NA --asm $asm --confident -o strats.na12878-$asm-conf.pdf
 
-# ######################################################################
+######################################################################
 
-# # ASM-BASED NON-SYNTENIC
-# #########################
+# ASM-BASED NON-SYNTENIC
+#########################
 
-# for asm in giab hprc
-# do
-#     python3 $SD/plot_asm_syntenic.py $HG --asm $asm             -o syntenic.hg002-$asm-full.pdf
-#     python3 $SD/plot_asm_syntenic.py $HG --asm $asm --confident -o syntenic.hg002-$asm-conf.pdf
-# done
+for asm in giab hprc
+do
+    python3 $SD/plot_asm_syntenic.py $HG --asm $asm             -o syntenic.hg002-$asm-full.pdf
+    python3 $SD/plot_asm_syntenic.py $HG --asm $asm --confident -o syntenic.hg002-$asm-conf.pdf
+done
 
-# asm=pp
-# python3 $SD/plot_asm_syntenic.py $NA --asm $asm             -o syntenic.na12878-$asm-full.pdf
-# python3 $SD/plot_asm_syntenic.py $NA --asm $asm --confident -o syntenic.na12878-$asm-conf.pdf
+asm=pp
+python3 $SD/plot_asm_syntenic.py $NA --asm $asm             -o syntenic.na12878-$asm-full.pdf
+python3 $SD/plot_asm_syntenic.py $NA --asm $asm --confident -o syntenic.na12878-$asm-conf.pdf
 
-# ######################################################################
+######################################################################
 
 # ASM-BASED COMPARISON HEATMAPS
 ################################
