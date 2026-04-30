@@ -24,3 +24,6 @@ python3 $SD/plot_giabstrat.py -a hprc --refine $HG/truvari.csv -o hg002-hprc.str
 
 python3 $SD/plot_giab.py --refine             $HG/truvari-giab.csv -o full.pdf
 python3 $SD/plot_giab.py --refine --confident $HG/truvari-giab.csv -o conf.pdf
+
+python3 analyses/check_proximity.py csv $HG > $HG/proximity-refined.csv
+python3 analyses/check_proximity.py pr $HG/proximity-refined.csv hg002-proximity.pdf
