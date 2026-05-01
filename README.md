@@ -6,6 +6,7 @@ This framework is provided as a Snakemake pipeline. Additional python scripts ca
 
 ### Prerequisites and usage
 The prerequisites to run `svbench-fw` are:
+* singularity (or docker, in such a case, please update rule "deepvariant" in `rules/preprocess.smk`)
 * conda/mamba
 * snakemake
 
@@ -59,27 +60,29 @@ Benchmarkers:
 * truvari (v5.4.0)
 
 ### Example
-To test `svbench-fw`, we provide example data (zenodo) and the following instructions:
+To test `svbench-fw`, we provide example data (on zenodo) and the following instructions. In this example, we will run and evaluate 2 reads-based callers (debreak and sniffles) against 3 assembly-based calleset (computed with dipcall, SVIM-ams, and hapdiff) and the GIAB v5.0q curated groundtruth. Evaluation is performed on both GRCh38 and CHM13 (region of chr22).
+
 ```
 git clone https://github.com/ldenti/svbench-fw.git
 cd svbench-fw
 
-# mamba create -c bioconda -c conda-forge -n svbench snakemake-minimal
+mamba create -c bioconda -c conda-forge -n svbench snakemake-minimal
 conda activate svbench
+# please be sure to have singularity installed, or if you have docker, edit rules/preprocess.smk
 
 mkdir svbench-example
 cd svbench-example
-wget https://zenodo.org/records/17608271/files/svbench-fw.exampledata.tar.gz
-tar xvfz svbench-fw.exampledata.tar.gz
-bash write_config.sh > config.yml
+wget https://zenodo.org/records/19949162/files/svbenchfw-example.tar.gz
+tar xvfz svbenchfw-example.tar.gz
+cd svbenchfw-example
+sed -i "s|/CURRDIR|$PWD|g" config.yaml
 cd ..
-snakemake -c 4 --use-conda --configfile ./svbench-example/config.yml -p [-n]
-ls ./svbench-example/SMK_OUT/*.csv
+snakemake -c 16 --use-conda test --configfile ./svbenchfw-example/config.yaml -p [-n]
+ls ./svbench-example/SMK_OUT/
 ```
 
-*Note 1:* this should take ~half an hour (using 4 threads)
-
-*Note 2:* recall of all tools will be low since reads cover a small region of the chromosome whereas truthsets and contigs cover the entire chromosome.
+*Note 1:* this should take 15 minutes (using 16 threads).
+*Note 2:* recall and F1 will be extremely low recall.
 
 ### Experiments
 Information on the data used in our experiments can be found [here](data/README.md). Please, edit the `config/config.yaml` accordingly and then run the Snakemake pipeline (two times, one per individual, i.e., HG002 and NA12878). Finally, to replicate the results/plots presented in the manuscript, follow the [instructions](analyses/README.md) in the `analyses` folder.
