@@ -103,26 +103,27 @@ def main():
         )
 
         # FULL GENOME (refine)
-        tp_base, fn = parse_vcf(base_d + "/ga4gh_with_refine.base.vcf.gz")
-        tp_comp, fp = parse_vcf(base_d + "/ga4gh_with_refine.comp.vcf.gz")
-        P, R, F = compute_prf(tp_comp, tp_base, fp, fn)
-        print(
-            ref,
-            giabv,
-            "Full",
-            "True",
-            caller,
-            s,
-            q,
-            tp_base,
-            tp_comp,
-            fp,
-            fn,
-            P,
-            R,
-            F,
-            sep=",",
-        )
+        if not os.path.isfile(base_d + "/NOREGIONSTOREFINE"):
+            tp_base, fn = parse_vcf(base_d + "/ga4gh_with_refine.base.vcf.gz")
+            tp_comp, fp = parse_vcf(base_d + "/ga4gh_with_refine.comp.vcf.gz")
+            P, R, F = compute_prf(tp_comp, tp_base, fp, fn)
+            print(
+                ref,
+                giabv,
+                "Full",
+                "True",
+                caller,
+                s,
+                q,
+                tp_base,
+                tp_comp,
+                fp,
+                fn,
+                P,
+                R,
+                F,
+                sep=",",
+            )
 
         strat_d = os.path.join(base_d, "strat-conf")
 
@@ -151,26 +152,27 @@ def main():
         )
 
         # CONFIDENT REGIONS (refine)
-        tp_base, fn = parse_vcf(strat_d + "/ga4gh_with_refine.base.vcf.gz")
-        tp_comp, fp = parse_vcf(strat_d + "/ga4gh_with_refine.comp.vcf.gz")
-        P, R, F = compute_prf(tp_comp, tp_base, fp, fn)
-        print(
-            ref,
-            giabv,
-            "strat-conf",
-            "True",
-            caller,
-            s,
-            q,
-            tp_base,
-            tp_comp,
-            fp,
-            fn,
-            P,
-            R,
-            F,
-            sep=",",
-        )
+        if not os.path.isfile(base_d + "/NOREGIONSTOREFINE"):
+            tp_base, fn = parse_vcf(strat_d + "/ga4gh_with_refine.base.vcf.gz")
+            tp_comp, fp = parse_vcf(strat_d + "/ga4gh_with_refine.comp.vcf.gz")
+            P, R, F = compute_prf(tp_comp, tp_base, fp, fn)
+            print(
+                ref,
+                giabv,
+                "strat-conf",
+                "True",
+                caller,
+                s,
+                q,
+                tp_base,
+                tp_comp,
+                fp,
+                fn,
+                P,
+                R,
+                F,
+                sep=",",
+            )
 
 
 if __name__ == "__main__":
