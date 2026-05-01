@@ -47,8 +47,16 @@ rule truvari:
         "../envs/truvari.yml"
     shell:
         """
+        set +e
+        rm -rf {params.wd}
         truvari bench --passonly --pick ac --dup-to-ins --refine --reference {input.fa} --base {input.asmcaller} --comp {input.vcf} --output {params.wd}
-        truvari ga4gh --input {params.wd} --output {params.wd}/ga4gh_with_refine
+        if [ $? -eq 0 ]
+        then
+            truvari ga4gh --input {params.wd} --output {params.wd}/ga4gh_with_refine
+        else
+            touch {params.wd}/NOREGIONSTOREFINE
+            touch {output}
+        fi
         """
 
 
@@ -70,6 +78,38 @@ rule truvari_giab:
         vcf=pjoin(WD, "{ref}", "callsets", "{caller}.vcf.gz"),
         truth=pjoin(WD, "input", "giab{giabv}", "{ref}.vcf.gz"),
     output:
+        pjoin(
+            WD,
+            "{ref}",
+            "truvari-giab",
+            "{giabv}",
+            "{caller}",
+            "tp-base.vcf.gz",
+        ),
+        pjoin(
+            WD,
+            "{ref}",
+            "truvari-giab",
+            "{giabv}",
+            "{caller}",
+            "tp-comp.vcf.gz",
+        ),
+        pjoin(
+            WD,
+            "{ref}",
+            "truvari-giab",
+            "{giabv}",
+            "{caller}",
+            "fp.vcf.gz",
+        ),
+        pjoin(
+            WD,
+            "{ref}",
+            "truvari-giab",
+            "{giabv}",
+            "{caller}",
+            "fn.vcf.gz",
+        ),
         pjoin(
             WD,
             "{ref}",
@@ -99,8 +139,16 @@ rule truvari_giab:
     threads: workflow.cores / 8
     shell:
         """
-        truvari bench --passonly --pick ac --dup-to-ins --refine --reference {input.fa} --base {input.asmcaller} --comp {input.vcf} --output {params.wd}
-        truvari ga4gh --input {params.wd} --output {params.wd}/ga4gh_with_refine
+        set +e
+        rm -rf {params.wd}
+        truvari bench --passonly --pick ac --dup-to-ins --refine --reference {input.fa} --base {input.truth} --comp {input.vcf} --output {params.wd}
+        if [ $? -eq 0 ]
+        then
+            truvari ga4gh --input {params.wd} --output {params.wd}/ga4gh_with_refine
+        else
+            touch {params.wd}/NOREGIONSTOREFINE
+            touch {output}
+        fi
         """
 
 

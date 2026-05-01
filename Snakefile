@@ -66,7 +66,9 @@ if "par" in config:
     for ref, fn in config["par"].items():
         lns(fn, pjoin(WD, "input", "pars", f"{ref}.bed"))
 
+# CURATED = []
 if "giab06" in config:
+    # CURATED.append("06")
     for t, fns in config["giab06"].items():
         os.makedirs(pjoin(WD, "input", "giab06"), exist_ok=True)
         for ref, fn in fns.items():
@@ -77,6 +79,7 @@ if "giab06" in config:
                 lns(fn + ".tbi", pjoin(WD, "input", "giab06", f"{ref}.vcf.gz.tbi"))
 
 if "giab50" in config:
+    # CURATED.append("50")
     for t, fns in config["giab50"].items():
         os.makedirs(pjoin(WD, "input", "giab50"), exist_ok=True)
         for ref, fn in fns.items():
@@ -310,4 +313,48 @@ rule giab_benchmarking:
     shell:
         """
         python3 ./scripts/format_truvari_giab.py {WD} > {output}
+        """
+
+# === Rule for testing example data
+rule test:
+    input:
+        expand(
+            pjoin(
+                WD,
+                "{ref}",
+                "truvari",
+                "{a}",
+                "{asmc}",
+                "{caller}",
+                "strat-{strat}",
+                "tp-base.vcf.gz",
+            ),
+            ref=references,
+            a=asms,
+            asmc=ASMC,
+            caller=CALLERS,
+            strat=["conf"] + strats,
+        ),
+        expand(
+            pjoin(
+                WD,
+                "{ref}",
+                "truvari-giab",
+                "50",
+                "{caller}",
+                "strat-conf",
+                "tp-base.vcf.gz",
+            ),
+            ref=references,
+            caller=CALLERS,
+        ),
+    output:
+        csv1=pjoin(WD, "truvari.csv"),
+        csv2=pjoin(WD, "truvari-giab.csv"),
+    conda:
+        "./envs/seaborn.yml"
+    shell:
+        """
+        python3 ./scripts/format_truvari.py {WD} > {output.csv1}
+        python3 ./scripts/format_truvari_giab.py {WD} > {output.csv2}
         """
