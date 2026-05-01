@@ -42,8 +42,8 @@ rule deepvariant:
     #    "../envs/deepvariant.yml"
     shell:
         """
+        # docker run -u $(id -u $USER) -v {params.bind}:{params.bind} google/deepvariant:1.9.0 /opt/deepvariant/bin/run_deepvariant --model_type PACBIO --ref {input.fa} --reads {input.bam} --output_vcf {output.vcf} --num_shards {threads} --sample_name {SAMPLE_NAME}
         singularity run --bind {params.bind}:{params.bind} docker://google/deepvariant:1.9.0 /opt/deepvariant/bin/run_deepvariant --model_type PACBIO --ref {input.fa} --reads {input.bam} --output_vcf {output.vcf} --num_shards {threads} --sample_name {SAMPLE_NAME}
-        # tabix -p vcf {output.vcf}
         """
 
 
