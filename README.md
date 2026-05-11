@@ -4,14 +4,15 @@ Modular and extensible framework to evaluate SV callers (from long reads) agains
 
 This framework is provided as a Snakemake pipeline. Additional python scripts can be used to summarize and plot the results (please refer to [analyses](analyses/README.md)).
 
+![](imgs/flowchart.png)
+
 ### Prerequisites and usage
 The prerequisites to run `svbench-fw` are:
 * singularity (or docker, in such a case, please update rule "deepvariant" in `rules/preprocess.smk`)
 * conda/mamba
 * snakemake
 
-![](imgs/flowchart.png)
-
+`svbench-fw` has been tested on Linux machines. To install and run it:
 ``` sh
 mamba create -c bioconda -c conda-forge -n svbench snakemake-minimal seaborn
 conda activate svbench
@@ -70,15 +71,14 @@ mamba create -c bioconda -c conda-forge -n svbench snakemake-minimal
 conda activate svbench
 # please be sure to have singularity installed, or if you have docker, edit rules/preprocess.smk
 
-mkdir svbench-example
-cd svbench-example
 wget https://zenodo.org/records/19949162/files/svbenchfw-example.tar.gz
 tar xvfz svbenchfw-example.tar.gz
 cd svbenchfw-example
 sed -i "s|/CURRDIR|$PWD|g" config.yaml
 cd ..
 snakemake -c 16 --use-conda test --configfile ./svbenchfw-example/config.yaml -p [-n]
-ls ./svbench-example/SMK_OUT/
+ls ./svbench-example/SMK_OUT/*.csv
+# the two CSV files should be similar to the CSV files in the example directory
 ```
 
 *Note 1:* this should take 15 minutes (using 16 threads).
